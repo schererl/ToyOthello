@@ -5,33 +5,36 @@ import java.util.Map;
 /* TODO: APPLY (virar tudo) */
 public class Othello {
 
-    final int EMPTY = 0;
-    final int BLACK_UP = 1;
-    final int WHITE_UP = 2;
+    final static int EMPTY = 0;
+    final static int BLACK_UP = 1;
+    final static int WHITE_UP = 2;
+    final static int PLAYERS_COUNT = 2;
 
-    public int[][] grid;
-    public int player;
     public final int size;
+    public int[][] grid;
+    public int numTurn;
+    public int mover;
 
     private int pass = 0;
 
     public Othello(final int sz, final int startPlayer) {
         size = sz;
-        player = startPlayer;
+        mover = startPlayer;
         grid = new int[size][size];
-
+        numTurn = 0;
         initPos();
     }
 
-    public Othello(int[][] grid, int player) {
-        size = grid.length;
-        this.player = player;
-        this.grid = new int[size][size];
+    public Othello copy() {
+        Othello instance = new Othello(this.size, mover);
+        instance.pass = this.pass;
+        instance.numTurn = this.numTurn;
         for (int i = 0; i < size; i++) {
             for (int j = 0; j < size; j++) {
-                this.grid[i][j] = grid[i][j];
+                instance.grid[i][j] = this.grid[i][j];
             }
         }
+        return instance;
     }
 
     public void initPos() {
@@ -54,33 +57,36 @@ public class Othello {
      * for each empty space verify if there is a valid pattern in any direction, if
      * has any it is a valid move
      */
-    public ArrayList<int[]> moves() {
-        ArrayList<int[]> movs = new ArrayList<int[]>();
+    public ArrayList<Move> moves() {
+        ArrayList<Move> movs = new ArrayList<Move>();
         for (int i = 0; i < size; i++) {
             for (int j = 0; j < size; j++) {
                 if (grid[i][j] == 0 && validMove(i, j)) {
-                    movs.add(new int[] { i, j });
+                    movs.add(new Move(i, j));
                 }
             }
         }
         // if no move can be done, pass.
         if (movs.size() == 0) {
-            movs.add(new int[] { -1, -1 });
+            movs.add(new Move(-1, -1));
         } // PASS
 
         return movs;
     }
 
     /* check which directions the oponents pieces must be flipped */
-    public void apply(int[] move) {
+    public void apply(final Move Move) {
+        this.numTurn++;
+
+        int[] move = Move.pos;
         if (move[0] == -1 && move[1] == -1) {
             pass++;
-            player = player == 1 ? 2 : 1;
+            mover = mover == 1 ? 2 : 1;
             return;
         }
 
-        grid[move[0]][move[1]] = player;
-        int oppCol = player == BLACK_UP? WHITE_UP:BLACK_UP;
+        grid[move[0]][move[1]] = mover;
+        int oppCol = mover == BLACK_UP ? WHITE_UP : BLACK_UP;
 
         int row = move[0];
         int col = move[1];
@@ -120,7 +126,7 @@ public class Othello {
         if (row + 1 < size && col - 1 > -1 && grid[row + 1][col - 1] == oppCol) {
             flip(row + 1, col - 1, 1, -1, oppCol);
         }
-        player = player == 1 ? 2 : 1;
+        mover = mover == 1 ? 2 : 1;
         pass = 0;
     }
 
@@ -135,22 +141,51 @@ public class Othello {
                 }
             }
         }
-        if (countTot == size * size || pass == 2) {
+        if (countTot == size * size || pass >= 2) {
             terminal = true;
         }
         return terminal;
     }
 
+    public double[] utilities() {
+        int countBlack = 0;
+        int countWhite = 0;
+        double[] ut = new double[PLAYERS_COUNT];
+
+        for (int i = 0; i < size; i++) {
+            for (int j = 0; j < size; j++) {
+                if (grid[i][j] == BLACK_UP) {
+                    countBlack++;
+                } else if (grid[i][j] == WHITE_UP) {
+                    countWhite++;
+                }
+            }
+        }
+
+        if (countBlack > countWhite) {
+            ut[this.BLACK_UP - 1] = 1;
+            ut[this.WHITE_UP - 1] = -1;
+        } else if (countBlack < countWhite) {
+            ut[this.BLACK_UP - 1] = -1;
+            ut[this.WHITE_UP - 1] = 1;
+        } else {
+            ut[this.BLACK_UP - 1] = 0;
+            ut[this.WHITE_UP - 1] = 0;
+        }
+        return ut;
+    }
+
     private boolean validMove(int row, int col) {
-        int oppCol = player == BLACK_UP? WHITE_UP:BLACK_UP;
+        int oppCol = mover == BLACK_UP ? WHITE_UP : BLACK_UP;
 
         // current
         if (grid[row][col] == EMPTY) {
 
-            if (row + 1 < size && col + 1 < size && grid[row + 1][col + 1] == oppCol && direction(row + 1, col + 1, 1, 1)) {
+            if (row + 1 < size && col + 1 < size && grid[row + 1][col + 1] == oppCol
+                    && direction(row + 1, col + 1, 1, 1)) {
                 return true;
             }
-            
+
             // :: DOWN
             else if (row + 1 < size && grid[row + 1][col] == oppCol && direction(row + 1, col, 1, 0)) {
                 return true;
@@ -166,8 +201,9 @@ public class Othello {
                 return true;
             }
 
-            else if (row - 1 > -1 && col - 1 > -1 && grid[row - 1][col - 1] == oppCol && direction(row - 1, col - 1, -1, -1)) {
-                return true; 
+            else if (row - 1 > -1 && col - 1 > -1 && grid[row - 1][col - 1] == oppCol
+                    && direction(row - 1, col - 1, -1, -1)) {
+                return true;
             }
 
             // :: UP
@@ -175,11 +211,13 @@ public class Othello {
                 return true;
             }
 
-            else if (row - 1 > -1 && col + 1 < size && grid[row - 1][col + 1] == oppCol &&  direction(row - 1, col + 1, -1, 1)) {
+            else if (row - 1 > -1 && col + 1 < size && grid[row - 1][col + 1] == oppCol
+                    && direction(row - 1, col + 1, -1, 1)) {
                 return true;
             }
 
-            else if (row + 1 < size && col - 1 > -1 && grid[row + 1][col - 1] == oppCol && direction(row + 1, col - 1, 1, -1)) {
+            else if (row + 1 < size && col - 1 > -1 && grid[row + 1][col - 1] == oppCol
+                    && direction(row + 1, col - 1, 1, -1)) {
                 return true;
             }
         }
@@ -195,8 +233,9 @@ public class Othello {
         while (tmpI >= 0 && tmpI < size && tmpJ >= 0 && tmpJ < size) {
             if (grid[tmpI][tmpJ] == op) {
                 flipLst.add(new int[] { tmpI, tmpJ });
-            } else if (grid[tmpI][tmpJ] == this.player) {
+            } else if (grid[tmpI][tmpJ] == this.mover) {
                 flip = true;
+                break;
             }
 
             tmpI += dirI;
@@ -204,7 +243,7 @@ public class Othello {
         }
         if (flip) {
             for (int[] t : flipLst) {
-                grid[t[0]][t[1]] = player;
+                grid[t[0]][t[1]] = mover;
             }
         }
     }
@@ -213,7 +252,7 @@ public class Othello {
         int tmpI = i;
         int tmpJ = j;
         while (tmpI >= 0 && tmpI < size && tmpJ >= 0 && tmpJ < size) {
-            if (grid[tmpI][tmpJ] == player)
+            if (grid[tmpI][tmpJ] == mover)
                 return true;
             else if (grid[tmpI][tmpJ] == EMPTY)
                 break;
@@ -223,36 +262,36 @@ public class Othello {
         return false;
     }
 
-    public String movesToString(ArrayList<int[]> moves) {
+    public String movesToString(ArrayList<Move> moves) {
         Colorize c = new Colorize();
         String output = "";
 
-        if (player == BLACK_UP) {
+        if (mover == BLACK_UP) {
             c.printBlackPiece();
             output += ":[ ";
         } else {
             c.printWhitekPiece();
             output += ":[ ";
         }
-        for (int[] m : moves) {
-            output += String.format("(%d, %d) ", m[0], m[1]);
+        for (Move m : moves) {
+            output += String.format("(%d, %d) ", m.pos[0], m.pos[1]);
         }
         output += "]";
         return output;
     }
 
-    public void paintLegalMoves(ArrayList<int[]> moves) {
+    public void paintLegalMoves(ArrayList<Move> moves) {
         Colorize c = new Colorize();
         for (int i = 0; i < size; i++) {
             for (int j = 0; j < size; j++) {
                 boolean GAMBI = false;
-                for (int[] m : moves) {
-                    if (m[0] == i && m[1] == j) {
-                        if (player == BLACK_UP) {
+                for (Move m : moves) {
+                    if (m.pos[0] == i && m.pos[1] == j) {
+                        if (mover == BLACK_UP) {
                             c.paintItBlack();
                             GAMBI = true;
                             System.out.print(" ");
-                        } else if (player == WHITE_UP) {
+                        } else if (mover == WHITE_UP) {
                             c.paintItWhite();
                             GAMBI = true;
                             System.out.print(" ");
@@ -290,6 +329,22 @@ public class Othello {
             }
             System.out.println();
         }
+    }
+
+    public String toStringFormat() {
+        String output = "{";
+        for (int i = 0; i < size; i++) {
+            output += "{";
+            for (int j = 0; j < size; j++) {
+                output += String.format("%d,", grid[i][j]);
+            }
+            output = output.substring(0, output.length() - 1);
+            output += "},";
+        }
+        output = output.substring(0, output.length() - 1);
+            
+        output += "}";
+        return output;
     }
 
     @Override
