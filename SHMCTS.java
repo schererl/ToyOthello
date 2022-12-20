@@ -12,7 +12,9 @@ public class SHMCTS extends AI {
 	private static final long MAXIMUM_SMART_THINKING_TIME = 60000l;
 	private final boolean USE_HALVE;
 	private final boolean USE_TIME_ADAPTATIVE;
-
+	
+	
+	ArrayList<Double> var = new ArrayList<Double>();
 	protected int player = -1;
 	protected Node root = null;
 	protected static SelectionPolicy policy;
@@ -53,7 +55,8 @@ public class SHMCTS extends AI {
 		final long start_time = System.currentTimeMillis();
 		final int maxIts = (maxIterations >= 0) ? maxIterations : Integer.MAX_VALUE;
 		final int initialPlayDepth = game.numTurn;
-
+		//int[] itVar = new int[]{1000,2000,3000,4000,5000,6000,7000,8000,9000,10000};
+		int idxVar = 0;
 		/* both can change if estimaTimeBonus is true */
 		long smartThink = MINIMUM_SMART_THINKING_TIME;
 		long stopTime = smartThink + start_time; // (maxSeconds > 0.0) ? start_time + (long) smartThink/*(maxSeconds *
@@ -110,8 +113,13 @@ public class SHMCTS extends AI {
 
 			++numIterations;
 			pass_time = System.currentTimeMillis() - start_time;
-		}
 
+			if(root.unexpandedMoves.size()==0 && numIterations%100==0){//itVar[idxVar] == numIterations){
+				var.add(this.childrenRewardVariance(root));
+				idxVar++;
+			}
+		}
+		//System.out.println(var);
 		final long end_time = System.currentTimeMillis();
 
 		// :: FINAL SELECTION
@@ -200,6 +208,24 @@ public class SHMCTS extends AI {
 		}
 
 		return bestChild;
+	}
+
+	public double childrenRewardVariance(final Node node){
+		double sumRw = 0;
+		double sumN = 0;
+		double average = 0;
+
+		for(Node ch:node.children){
+			sumRw+= ch.scoreSums[this.player-1];
+			sumN+= ch.visitCount;
+		}
+		average = sumRw/sumN;
+		
+		int sumDist=0;
+		for(Node ch:node.children){
+			sumDist+= Math.pow(ch.scoreSums[this.player-1]-average,2);
+		}
+		return Math.sqrt(sumDist/sumN);
 	}
 
 	public static class Node {
