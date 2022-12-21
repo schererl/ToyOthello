@@ -20,8 +20,9 @@ public class SHMCTS extends AI {
 	protected long smartThinkLimit = 0;
 	protected int lastActionHistorySize = 0;
 
-	ArrayList<Double> var = new ArrayList<Double>();
+	public Statistics stats;
 	static int internal = 0;
+	
 	public SHMCTS(final boolean tr, final boolean h, final boolean ta) {
 		this.friendlyName = "SHMCTS";
 		USE_HALVE = h;
@@ -56,8 +57,7 @@ public class SHMCTS extends AI {
 		final long start_time = System.currentTimeMillis();
 		final int maxIts = (maxIterations >= 0) ? maxIterations : Integer.MAX_VALUE;
 		final int initialPlayDepth = game.numTurn;
-		//int[] itVar = new int[]{1000,2000,3000,4000,5000,6000,7000,8000,9000,10000};
-		//int idxVar = 0;
+		stats = new Statistics();
 		internal=0;
 		/* both can change if estimaTimeBonus is true */
 		long smartThink = MINIMUM_SMART_THINKING_TIME;
@@ -116,11 +116,10 @@ public class SHMCTS extends AI {
 			++numIterations;
 			pass_time = System.currentTimeMillis() - start_time;
 
-			if(root.unexpandedMoves.size()==0 && numIterations%100==0){
-			//if(root.unexpandedMoves.size()==0 && numIterations==9999){
-				//var.add(this.childrenRewardSTDDEV(root));
-				var.add(this.childrenRewardSTDDEV(root));
-				//idxVar++;
+			if(numIterations%100==0){
+				stats.computeStandardDeviation(root);
+				stats.computeMean(root);
+				stats.computeMedian(root);
 			}
 		}
 		//System.out.println(var);
@@ -129,7 +128,8 @@ public class SHMCTS extends AI {
 		// :: FINAL SELECTION
 		Node decidedNode = finalMoveSelection(root);
 		smartThinkLimit -= System.currentTimeMillis() - start_time;
-
+		
+		root.sort(root.children.size(), root.game.mover);
 		return decidedNode.moveFromParent;
 	}
 
@@ -213,43 +213,6 @@ public class SHMCTS extends AI {
 		}
 
 		return bestChild;
-	}
-
-	public double childrenRewardSTDDEV(final Node node){
-		double sumRw = 0;
-		double sumN = 0;
-		double average = 0;
-
-		for(Node ch:node.children){
-			sumRw+= ch.scoreSums[this.player-1];
-			sumN+= ch.visitCount;
-		//	System.out.printf("\tch: %.4f\n",ch.scoreSums[this.player-1]);
-		}
-		average = sumRw/sumN;
-		//System.out.printf("\tavg: %.4f (%.4f/%.4f)\n",sumRw/sumN, sumRw,sumN);
-		double sumDist=0;
-		for(Node ch:node.children){
-			sumDist+= Math.pow((ch.scoreSums[this.player-1]/ch.visitCount)-average,2);
-		}
-		//System.out.printf("tddev: %.4f (%.4f/%.4f)\n", Math.abs(Math.sqrt(sumDist/sumN)), sumDist,sumN);
-		
-		return sumDist/sumN;//Math.abs(Math.sqrt(sumDist/sumN));
-	}
-
-	public double childrenArmPullsSTDDEV(final Node node){
-		double sumN = 0;
-		double average = 0;
-
-		for(Node ch:node.children){
-			sumN+= ch.visitCount;
-		}
-		average = sumN/node.visitCount;
-		
-		int sumDist=0;
-		for(Node ch:node.children){
-			sumDist+= Math.pow(ch.visitCount-average,2);
-		}
-		return Math.sqrt(sumDist/sumN);
 	}
 
 	public static class Node {

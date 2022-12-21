@@ -4,6 +4,11 @@ import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 import java.io.IOException;
 import java.util.Scanner;
+
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
+
 /* 
 it:530
 curr state: {{0,1,1,1,1,1,1,0},{2,1,1,2,2,2,0,0},{2,1,1,1,1,1,1,0},{2,1,2,1,1,1,1,2},{2,1,2,2,1,1,0,2},{2,1,2,2,1,1,1,0},{1,1,1,1,0,1,1,0},{0,1,1,0,0,2,2,2}}
@@ -12,16 +17,48 @@ bfactor: 5
 */
 public class Main {
     public static void main(String args[]) throws Exception {
-        varTest();
-        // simulate();
-        // searchBoardConfig();
+        //varTest();
+        //simulate();
+        //searchBoardConfig();
+        String[] output = statsTest(new int[][]{{0,0,0,1,2,2,2,0},{2,0,1,1,1,2,2,1},{0,1,0,1,1,1,2,1},{1,1,1,1,1,1,2,1},{0,0,1,2,2,2,1,1},{0,0,1,2,2,1,1,1},{0,1,2,0,1,1,1,2},{0,2,2,0,0,0,2,0}});
+    
+        try {
+            FileWriter fileWriter = new FileWriter("statsFull.csv");
+            BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
+            bufferedWriter.write(output[0]);
+            bufferedWriter.write(output[1]);
+            bufferedWriter.write(output[2]);
+            bufferedWriter.newLine();
+            bufferedWriter.close();
+
+            FileWriter fileWriter2 = new FileWriter("statsMean.csv");
+            BufferedWriter bufferedWriter2 = new BufferedWriter(fileWriter2);
+            bufferedWriter2.write(output[0]);
+            bufferedWriter2.newLine();
+            bufferedWriter2.close();
+
+            FileWriter fileWriter3 = new FileWriter("statsMedian.csv");
+            BufferedWriter bufferedWriter3 = new BufferedWriter(fileWriter3);
+            bufferedWriter3.write(output[1]);
+            bufferedWriter3.newLine();
+            bufferedWriter3.close();
+
+            FileWriter fileWriter4 = new FileWriter("statsSTDDev.csv");
+            BufferedWriter bufferedWriter4 = new BufferedWriter(fileWriter4);
+            bufferedWriter4.write(output[2]);
+            bufferedWriter4.newLine();
+            bufferedWriter4.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+         
     }
 
     private static void searchBoardConfig() {
-        int bfactor = 40;
-        final int maxNodes = 1000;
-        final int boardSize= 22;
-        int internal = 800;
+        int bfactor = 4;
+        final int maxNodes = 10000;
+        final int boardSize= 8;
+        int internal = 8000;
         double maxVar = Integer.MIN_VALUE;
         String state = "";
         int i = 0;
@@ -30,28 +67,52 @@ public class Main {
 
             SHMCTS ag = new SHMCTS(false, false, false);
             ag.initAI(cp, Othello.WHITE_UP);
-
+            int depth = 10;
+            int it = 0;
+                
             while (!cp.isTerminal()) {
                 ArrayList<Move> moves = new ArrayList<Move>();
                 moves = cp.moves();
-                if(cp.mover == ag.player && moves.size()>=bfactor){
+                if(it > depth && cp.mover == ag.player && moves.size()>=bfactor){
+                    
                     ag.selectAction(cp.copy(), -1, maxNodes, 1000);
-                    if(SHMCTS.internal >= internal && ag.var.get(ag.var.size()-1)>maxVar){
+                    if(SHMCTS.internal >= internal && ag.stats.stdDev>maxVar){
                         state=cp.toStringFormat();
-                        maxVar = ag.var.get(ag.var.size()-1);
-                        // System.out.print("\033[H\033[2J");
-                        // System.out.flush();
-                        cp.paintLegalMoves(moves);
-                        System.out.printf("it:%d\ncurr state: %s\nvar: %.6f\nbfactor: %d\n", i, state, maxVar, moves.size());
+                        maxVar = ag.stats.stdDev;
+                        System.out.print("\033[H\033[2J");
+                        System.out.flush();
+                        //cp.paintLegalMoves(moves);
+                        System.out.printf("SIZE:%d\n\tstd dev: %.6f\n\taverage: %.6f\n\tmedian: %.6f\n\n", boardSize, ag.stats.stdDev, ag.stats.mean, ag.stats.median);
+                        System.out.printf("it:%d\ncurr state: %s\nbfactor: %d\n", i, state, moves.size());
 
                     }
                 }
+                it++;
                 i++;
                 Move m = moves.get(ThreadLocalRandom.current().nextInt(moves.size()));
                 cp.apply(m);
             }
         }
 
+    }
+    
+    //{{0,0,0,1,2,2,2,0},{2,0,1,1,1,2,2,1},{0,1,0,1,1,1,2,1},{1,1,1,1,1,1,2,1},{0,0,1,2,2,2,1,1},{0,0,1,2,2,1,1,1},{0,1,2,0,1,1,1,2},{0,2,2,0,0,0,2,0}}
+    private static String[] statsTest(int[][] grid){
+        final int size = 8;
+        final int maxIterations = 10000;
+        String[] outputCSV = new String[3];
+        
+        Othello ot = new Othello(size, Othello.WHITE_UP, grid);
+        
+        SHMCTS ag = new SHMCTS(false, false, false);
+        ag.initAI(ot, Othello.WHITE_UP);
+        ag.selectAction(ot.copy(), -1, maxIterations, 1000);
+        
+        outputCSV[0] = ag.stats.toStringMean();
+        outputCSV[1] = ag.stats.toStringMedian();
+        outputCSV[2] = ag.stats.toStringStdDev();
+        
+        return outputCSV;
     }
 
     private static void varTest() throws Exception {
@@ -65,7 +126,7 @@ public class Main {
             ag.initAI(ot, Othello.WHITE_UP);
             Move m = ag.selectAction(ot.copy(), -1, 10000, 1000);
             outputCSV += String.valueOf(calcBFactor(othelloSize));
-            for (Double v : ag.var) {
+            for (Double v : ag.stats.stdDevTrack) {
                 outputCSV += String.format(";%.4f", v);
             }
             outputCSV += "\n";
