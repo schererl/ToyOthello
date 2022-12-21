@@ -2,8 +2,8 @@ import matplotlib.pyplot as plt
 import csv
 
 # Open the CSV file
-with open("output.csv", "r") as f:
-    # Read the data from the file using the csv reader
+with open("outputVar.csv", "r") as f:
+    # Read the data from the file using the csv reader  
     reader = csv.reader(f, delimiter=";")
     # Extract the values from the input string
     bfactor_values = []
@@ -28,11 +28,11 @@ for i, d in enumerate(data):
 
 # Add a legend and title
 ax.legend()
-ax.set_title("UCT std deviation growth")
+ax.set_title("UCT reward variance growth")
 ax.set_xlabel("arm pulls")
-ax.set_ylabel("std deviation")
+ax.set_ylabel("variance")
 
 # Show the plot
 
-plt.savefig("UCT_stdDev.png")
+plt.savefig("UCT_VarianceReward.png")
 plt.show()

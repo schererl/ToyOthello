@@ -4,17 +4,60 @@ import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 import java.io.IOException;
 import java.util.Scanner;
-
+/* 
+it:530
+curr state: {{0,1,1,1,1,1,1,0},{2,1,1,2,2,2,0,0},{2,1,1,1,1,1,1,0},{2,1,2,1,1,1,1,2},{2,1,2,2,1,1,0,2},{2,1,2,2,1,1,1,0},{1,1,1,1,0,1,1,0},{0,1,1,0,0,2,2,2}}
+var: 0,022361
+bfactor: 5
+*/
 public class Main {
     public static void main(String args[]) throws Exception {
         varTest();
         // simulate();
+        // searchBoardConfig();
+    }
+
+    private static void searchBoardConfig() {
+        int bfactor = 40;
+        final int maxNodes = 1000;
+        final int boardSize= 22;
+        int internal = 800;
+        double maxVar = Integer.MIN_VALUE;
+        String state = "";
+        int i = 0;
+        while (true) {
+            Othello cp = new Othello(boardSize, Othello.WHITE_UP);
+
+            SHMCTS ag = new SHMCTS(false, false, false);
+            ag.initAI(cp, Othello.WHITE_UP);
+
+            while (!cp.isTerminal()) {
+                ArrayList<Move> moves = new ArrayList<Move>();
+                moves = cp.moves();
+                if(cp.mover == ag.player && moves.size()>=bfactor){
+                    ag.selectAction(cp.copy(), -1, maxNodes, 1000);
+                    if(SHMCTS.internal >= internal && ag.var.get(ag.var.size()-1)>maxVar){
+                        state=cp.toStringFormat();
+                        maxVar = ag.var.get(ag.var.size()-1);
+                        // System.out.print("\033[H\033[2J");
+                        // System.out.flush();
+                        cp.paintLegalMoves(moves);
+                        System.out.printf("it:%d\ncurr state: %s\nvar: %.6f\nbfactor: %d\n", i, state, maxVar, moves.size());
+
+                    }
+                }
+                i++;
+                Move m = moves.get(ThreadLocalRandom.current().nextInt(moves.size()));
+                cp.apply(m);
+            }
+        }
+
     }
 
     private static void varTest() throws Exception {
         int[] othelloSizeArr = new int[] { 8, 12, 16, 22, 24 };
-        String outputCSV = "";//"bfactor;1000;2000;3000;4000;5000;6000;7000;8000;9000;10000\n";
-
+        String outputCSV = "";// "bfactor;1000;2000;3000;4000;5000;6000;7000;8000;9000;10000\n";
+        
         for (final int size : othelloSizeArr) {
             final int othelloSize = size;
             Othello ot = new Othello(othelloSize, Othello.WHITE_UP);
@@ -42,6 +85,7 @@ public class Main {
                 d++;
                 ArrayList<Move> moves = cp.moves();
                 b += moves.size();
+                
                 Move m = moves.get(ThreadLocalRandom.current().nextInt(moves.size()));
                 cp.apply(m);
             }
@@ -51,11 +95,11 @@ public class Main {
 
     private static void simulate() throws Exception {
         final int numberPlayouts = 1;
-        final int othelloSize = 22;
+        final int othelloSize = 8;
         final int budget = 1000;
         final boolean debug = true;
 
-        Othello ot = new Othello(othelloSize, Othello.WHITE_UP);
+        Othello ot = new Othello(othelloSize, Othello.BLACK_UP);
 
         SHMCTS ag = new SHMCTS(false, false, false);
         ag.initAI(ot, Othello.BLACK_UP);
@@ -78,14 +122,14 @@ public class Main {
 
                 if (debug) {
                     float aux = b / (float) (d);
-
-                    System.out.print("\033[H\033[2J");
-                    System.out.flush();
+                    int player = cp.mover;
+                    //System.out.print("\033[H\033[2J");
+                    //System.out.flush();
                     cp.paintLegalMoves(moves);
 
                     System.out
-                            .println(String.format("\nplayouts: %d\navg bfactor:%.0f\nchildren: %d\navg depth: %.0f\n",
-                                    i + 1, aux, moves.size(),
+                            .println(String.format("\nP%d\nplayouts: %d\navg bfactor:%.0f\nchildren: %d\navg depth: %.0f\n",
+                                    player, i + 1, aux, moves.size(),
                                     d / (float) (i + 1)));
                     Thread.sleep(500);
 
@@ -97,14 +141,14 @@ public class Main {
                     // m = moves.get(ThreadLocalRandom.current().nextInt(moves.size()));
                     cp.apply(m);
 
-                    System.out.print("\033[H\033[2J");
-                    System.out.flush();
+                    //System.out.print("\033[H\033[2J");
+                    //System.out.flush();
                     cp.printfBoard();
 
                     System.out.println(
-                            String.format("\nplayouts: %d\navg bfactor:%.0f\nchildren: %d\navg depth: %.0f\n\n%s\n",
-                                    i + 1, aux, moves.size(),
-                                    d / (float) (i + 1), cp.toStringFormat()));
+                            String.format("\nP%d\nplayouts: %d\navg bfactor:%.0f\nchildren: %d\navg depth: %.0f\n",
+                                    player, i + 1, aux, moves.size(),
+                                    d / (float) (i + 1)));
                     Thread.sleep(1000);
 
                 } else {
@@ -120,6 +164,7 @@ public class Main {
                             d / (float) (i + 1)));
 
                 }
+                System.out.println();
             }
             if (cp.utilities()[ag.player - 1] == 1) {
                 agentWin++;
