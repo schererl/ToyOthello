@@ -2,22 +2,22 @@ import java.util.concurrent.ThreadLocalRandom;
 
 public class UCB1 implements SelectionPolicy{
     
-    public SHMCTS.Node select(final SHMCTS.Node current){
+    public Node select(final Node current){
 
-        SHMCTS.Node bestChild = null;
+        Node bestChild = null;
         double bestValue = Double.NEGATIVE_INFINITY;
         int numBestFound = 0;
         
-        final int numChildren = Math.min(current.virtualCHLen, current.children.size());
+        final int numChildren = Math.min(current.virtualN, current.children.size());
         final int mover = current.game.mover;
         final int moverPos = mover-1;
-        final double twoParentLog = 2.0 * Math.log(Math.max(1, current.visitCount));
+        final double twoParentLog = 2.0 * Math.log(Math.max(1, current.N));
         
         for (int i = 0; i < numChildren; ++i) 
         {
-        	final SHMCTS.Node child = current.children.get(i);
-        	final double exploit = child.scoreSums[moverPos] / child.visitCount;
-        	final double explore = Math.sqrt(twoParentLog / child.visitCount);
+        	final Node child = current.children.get(i);
+        	final double exploit = child.Q[moverPos] / child.N;
+        	final double explore = Math.sqrt(twoParentLog / child.N);
         	final double ucb1Value = exploit + (Math.sqrt(2)*explore);
             
             if (ucb1Value > bestValue)

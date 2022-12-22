@@ -30,9 +30,9 @@ public class SHMCTS extends AI {
 	}
 
 	@Override
-	public void initAI(final Othello game, final int playerID) {
-		this.player = playerID;
-		SHMCTS.policy = new UCB1();
+	public void initAI(final int playerID) {
+        super.initAI(playerID);
+    	SHMCTS.policy = new UCB1();
 		smartThinkLimit = MAXIMUM_SMART_THINKING_TIME;
 	}
 
@@ -74,8 +74,8 @@ public class SHMCTS extends AI {
 		int numIterations = 0;
 
 		long pass_time = System.currentTimeMillis() - start_time;
-		this.root = new Node(root, null, game);
-		this.root.virtualCHLen = root.children.size() + root.unexpandedMoves.size();
+		this.root = new Node(null, null, game);
+		this.root.virtualN = root.children.size() + root.unexpandedMoves.size();
 		while (numIterations < maxIts ) {
 
 			/* TIME BONUS */
@@ -88,11 +88,11 @@ public class SHMCTS extends AI {
 
 			/* :: SEQUENTIAL HALVING */
 			if (needHalve && isHalveTime(pass_time, smartThink, halve)) {
-				if (root.virtualCHLen <= 4)
+				if (root.virtualN <= 4)
 					needHalve = false;
-				root.sort(Math.min(root.children.size(), root.virtualCHLen), this.player);
+				root.sort(Math.min(root.children.size(), root.virtualN));
 				halve += 1;
-				root.virtualCHLen = (int) Math
+				root.virtualN = (int) Math
 						.max(Math.ceil((root.children.size() + root.unexpandedMoves.size()) / Math.pow(2, halve)), 4);
 			}
 
@@ -129,7 +129,7 @@ public class SHMCTS extends AI {
 		Node decidedNode = finalMoveSelection(root);
 		smartThinkLimit -= System.currentTimeMillis() - start_time;
 		
-		root.sort(root.children.size(), root.game.mover);
+		root.sort(root.children.size());
 		return decidedNode.moveFromParent;
 	}
 
@@ -164,29 +164,22 @@ public class SHMCTS extends AI {
 		// :: BACKPROP
 		double learning = 1;
 		while (current != null) {
-			current.visitCount += 1;
+			current.N += 1;
 			for (int p = 0; p < Othello.PLAYERS_COUNT; p++) {
 				double discUt = utilities[p] * learning;
-				current.scoreSums[p] += discUt;
+				current.Q[p] += discUt;
 			}
 			learning *= DISCOUNT_FACTOR;
 			current = current.parent;
 		}
 	}
 
-	public static void playout(Othello playoutGame, final int maxDepth) {
-		while (!playoutGame.isTerminal() && playoutGame.numTurn < maxDepth) {
-			ArrayList<Move> moves = playoutGame.moves();
-			playoutGame.apply(moves.get(ThreadLocalRandom.current().nextInt(moves.size())));
-		}
-	}
-
 	private void printEvaluation(Node n, long init, long end) {
-		System.out.println(String.format("ROOT  %d nodes", n.visitCount));
+		System.out.println(String.format("ROOT  %d nodes", n.N));
 		for (Node ch : n.children) {
 			// System.out.println(String.format("\t%s | (%.0f/%d) %.4f", ch.moveFromParent,
-			// ch.scoreSums[this.player],
-			// ch.visitCount,ch.scoreSums[this.player]/ch.visitCount));
+			// ch.Q[this.player],
+			// ch.N,ch.Q[this.player]/ch.N));
 		}
 		System.out.printf("ELAPSED TIME: %d\n", end - init);
 	}
@@ -200,13 +193,13 @@ public class SHMCTS extends AI {
 
 		for (int i = 0; i < numChildren; ++i) {
 			final Node child = rootNode.children.get(i);
-			final int visitCount = child.visitCount;
+			final int N = child.N;
 
-			if (visitCount > bestVisitCount) {
-				bestVisitCount = visitCount;
+			if (N > bestVisitCount) {
+				bestVisitCount = N;
 				bestChild = child;
 				numBestFound = 1;
-			} else if (visitCount == bestVisitCount &&
+			} else if (N == bestVisitCount &&
 					ThreadLocalRandom.current().nextInt() % ++numBestFound == 0) {
 				bestChild = child;
 			}
@@ -215,59 +208,5 @@ public class SHMCTS extends AI {
 		return bestChild;
 	}
 
-	public static class Node {
-		public Node parent;
-		public Move concreteMoveFromParent;
-		public Move moveFromParent;
-		public final Othello game;
-		public int visitCount = 0;
-		public final double[] scoreSums;
-		public final List<Node> children = new ArrayList<Node>();
-		public final ArrayList<Move> unexpandedMoves;
-		public int virtualCHLen;
-
-		public Node(final Node parent, Move moveFromParent, final Othello game) {
-			this.parent = parent;
-			this.moveFromParent = moveFromParent;
-			this.game = game;
-			scoreSums = new double[game.PLAYERS_COUNT + 1];
-			unexpandedMoves = new ArrayList<Move>(game.moves());
-			virtualCHLen = unexpandedMoves.size() + children.size(); // reset VirtualCHLen
-
-			if (parent != null)
-				parent.children.add(this);
-		}
-
-		public Node findChildForMove(final Move move) {
-			for (final Node child : children) {
-
-				if (child != null && child.concreteMoveFromParent.equals(move)) {
-					child.parent = null;
-					return child;
-				}
-			}
-
-			return null;
-		}
-
-		private void sort(final int interval, final int agent) {
-			List<Node> childrenCopy = children.subList(0, interval);
-			final int mover = game.mover;
-			Collections.sort(childrenCopy, new Comparator<Node>() {
-				@Override
-				public int compare(Node o1, Node o2) {
-					double f1 = o1.visitCount;
-					double f2 = o2.visitCount;
-					return Double.compare(-f1, -f2);
-				}
-			});
-			for (int i = 0; i < childrenCopy.size(); i++) {
-				children.set(i, childrenCopy.get(i));
-			}
-		}
-
-	}
-
-	// -------------------------------------------------------------------------
 
 }

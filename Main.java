@@ -20,6 +20,8 @@ public class Main {
         //varTest();
         //simulate();
         //searchBoardConfig();
+
+        /* 
         String[] output = statsTest(new int[][]{{0,0,0,1,2,2,2,0},{2,0,1,1,1,2,2,1},{0,1,0,1,1,1,2,1},{1,1,1,1,1,1,2,1},{0,0,1,2,2,2,1,1},{0,0,1,2,2,1,1,1},{0,1,2,0,1,1,1,2},{0,2,2,0,0,0,2,0}});
     
         try {
@@ -51,6 +53,7 @@ public class Main {
         } catch (IOException e) {
             e.printStackTrace();
         }
+        */
          
     }
 
@@ -66,7 +69,7 @@ public class Main {
             Othello cp = new Othello(boardSize, Othello.WHITE_UP);
 
             SHMCTS ag = new SHMCTS(false, false, false);
-            ag.initAI(cp, Othello.WHITE_UP);
+            ag.initAI(Othello.WHITE_UP);
             int depth = 10;
             int it = 0;
                 
@@ -105,7 +108,7 @@ public class Main {
         Othello ot = new Othello(size, Othello.WHITE_UP, grid);
         
         SHMCTS ag = new SHMCTS(false, false, false);
-        ag.initAI(ot, Othello.WHITE_UP);
+        ag.initAI(Othello.WHITE_UP);
         ag.selectAction(ot.copy(), -1, maxIterations, 1000);
         
         outputCSV[0] = ag.stats.toStringMean();
@@ -123,7 +126,7 @@ public class Main {
             final int othelloSize = size;
             Othello ot = new Othello(othelloSize, Othello.WHITE_UP);
             SHMCTS ag = new SHMCTS(false, false, false);
-            ag.initAI(ot, Othello.WHITE_UP);
+            ag.initAI(Othello.WHITE_UP);
             Move m = ag.selectAction(ot.copy(), -1, 10000, 1000);
             outputCSV += String.valueOf(calcBFactor(othelloSize));
             for (Double v : ag.stats.stdDevTrack) {
@@ -162,11 +165,11 @@ public class Main {
 
         Othello ot = new Othello(othelloSize, Othello.BLACK_UP);
 
-        SHMCTS ag = new SHMCTS(false, false, false);
-        ag.initAI(ot, Othello.BLACK_UP);
+        AI ag = new SHMCTS(false, false, false);
+        ag.initAI(Othello.BLACK_UP);
 
-        SHMCTS op = new SHMCTS(false, false, false);
-        op.initAI(ot, Othello.WHITE_UP);
+        AI op = new SHOT(false);
+        op.initAI(Othello.WHITE_UP);
 
         final long start_time = System.currentTimeMillis();
 
