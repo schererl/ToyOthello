@@ -120,6 +120,8 @@ public class SHMCTS extends AI {
 				stats.computeStandardDeviation(root);
 				stats.computeMean(root);
 				stats.computeMedian(root);
+				stats.computeEntropy(root);
+				stats.computeVarCoef(root);
 			}
 		}
 		//System.out.println(var);
@@ -127,6 +129,8 @@ public class SHMCTS extends AI {
 
 		// :: FINAL SELECTION
 		Node decidedNode = finalMoveSelection(root);
+		//stats.computeEntropy(decidedNode);
+		stats.computeEntropy(root);
 		smartThinkLimit -= System.currentTimeMillis() - start_time;
 		
 		root.sort(root.children.size());
@@ -158,16 +162,26 @@ public class SHMCTS extends AI {
 	public static void backpropagation(final Othello playoutGame, Node current, final int numTurns) {
 
 		final double[] utilities = playoutGame.utilities();
+		final double[] discUtilities = playoutGame.utilities();
 		for (int i = 0; i < utilities.length; i++) {
-			utilities[i] = utilities[i] * Math.pow(0.999, numTurns);
+			discUtilities[i] = utilities[i] * Math.pow(DISCOUNT_FACTOR, numTurns);
 		}
+
 		// :: BACKPROP
 		double learning = 1;
 		while (current != null) {
 			current.N += 1;
 			for (int p = 0; p < Othello.PLAYERS_COUNT; p++) {
-				double discUt = utilities[p] * learning;
+				double discUt = discUtilities[p] * learning;
 				current.Q[p] += discUt;
+			}
+
+			if(utilities[current.game.mover-1] == 1){
+				current.wins += 1;
+			}else if(utilities[current.game.mover-1] == -1){
+				current.loss +=1;
+			}else{
+				current.drawn+=1;
 			}
 			learning *= DISCOUNT_FACTOR;
 			current = current.parent;

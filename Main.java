@@ -21,7 +21,7 @@ public class Main {
         //simulate();
         //searchBoardConfig();
 
-        /* 
+         
         String[] output = statsTest(new int[][]{{0,0,0,1,2,2,2,0},{2,0,1,1,1,2,2,1},{0,1,0,1,1,1,2,1},{1,1,1,1,1,1,2,1},{0,0,1,2,2,2,1,1},{0,0,1,2,2,1,1,1},{0,1,2,0,1,1,1,2},{0,2,2,0,0,0,2,0}});
     
         try {
@@ -30,36 +30,43 @@ public class Main {
             bufferedWriter.write(output[0]);
             bufferedWriter.write(output[1]);
             bufferedWriter.write(output[2]);
-            bufferedWriter.newLine();
             bufferedWriter.close();
 
             FileWriter fileWriter2 = new FileWriter("statsMean.csv");
             BufferedWriter bufferedWriter2 = new BufferedWriter(fileWriter2);
             bufferedWriter2.write(output[0]);
-            bufferedWriter2.newLine();
             bufferedWriter2.close();
 
             FileWriter fileWriter3 = new FileWriter("statsMedian.csv");
             BufferedWriter bufferedWriter3 = new BufferedWriter(fileWriter3);
             bufferedWriter3.write(output[1]);
-            bufferedWriter3.newLine();
             bufferedWriter3.close();
 
             FileWriter fileWriter4 = new FileWriter("statsSTDDev.csv");
             BufferedWriter bufferedWriter4 = new BufferedWriter(fileWriter4);
             bufferedWriter4.write(output[2]);
-            bufferedWriter4.newLine();
             bufferedWriter4.close();
+
+            FileWriter fileWriter5= new FileWriter("statsEntropy.csv");
+            BufferedWriter bufferedWriter5 = new BufferedWriter(fileWriter5);
+            bufferedWriter5.write(output[3]);
+            bufferedWriter5.close();
+
+            FileWriter fileWriter6= new FileWriter("statsVarCoef.csv");
+            BufferedWriter bufferedWriter6 = new BufferedWriter(fileWriter6);
+            bufferedWriter6.write(output[4]);
+            bufferedWriter6.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
-        */
+        
+       
          
     }
 
     private static void searchBoardConfig() {
         int bfactor = 4;
-        final int maxNodes = 10000;
+        final int maxNodes = 100000;
         final int boardSize= 8;
         int internal = 8000;
         double maxVar = Integer.MIN_VALUE;
@@ -76,16 +83,17 @@ public class Main {
             while (!cp.isTerminal()) {
                 ArrayList<Move> moves = new ArrayList<Move>();
                 moves = cp.moves();
-                if(it > depth && cp.mover == ag.player && moves.size()>=bfactor){
-                    
+                //if(it > depth && cp.mover == ag.player && moves.size()>=bfactor){
+                if(true){
                     ag.selectAction(cp.copy(), -1, maxNodes, 1000);
-                    if(SHMCTS.internal >= internal && ag.stats.stdDev>maxVar){
+                    //if(SHMCTS.internal >= internal && ag.stats.stdDev>maxVar){
+                    if(true){
                         state=cp.toStringFormat();
                         maxVar = ag.stats.stdDev;
                         System.out.print("\033[H\033[2J");
                         System.out.flush();
                         //cp.paintLegalMoves(moves);
-                        System.out.printf("SIZE:%d\n\tstd dev: %.6f\n\taverage: %.6f\n\tmedian: %.6f\n\n", boardSize, ag.stats.stdDev, ag.stats.mean, ag.stats.median);
+                        System.out.printf("SIZE:%d\n\tstd dev: %.6f\n\taverage: %.6f\n\tmedian: %.6f\nentropy: %.6f\ncoef.var: %.06f\n", boardSize, ag.stats.stdDev, ag.stats.mean, ag.stats.median, ag.stats.entropy, (ag.stats.stdDev/ag.stats.mean));
                         System.out.printf("it:%d\ncurr state: %s\nbfactor: %d\n", i, state, moves.size());
 
                     }
@@ -101,19 +109,23 @@ public class Main {
     
     //{{0,0,0,1,2,2,2,0},{2,0,1,1,1,2,2,1},{0,1,0,1,1,1,2,1},{1,1,1,1,1,1,2,1},{0,0,1,2,2,2,1,1},{0,0,1,2,2,1,1,1},{0,1,2,0,1,1,1,2},{0,2,2,0,0,0,2,0}}
     private static String[] statsTest(int[][] grid){
-        final int size = 8;
-        final int maxIterations = 10000;
-        String[] outputCSV = new String[3];
+        final int size = 22;
+        final int maxIterations = 25000;
+        String[] outputCSV = new String[5];
         
-        Othello ot = new Othello(size, Othello.WHITE_UP, grid);
+        //Othello ot = new Othello(size, Othello.WHITE_UP, grid);
+        Othello ot = new Othello(size, Othello.WHITE_UP);
         
         SHMCTS ag = new SHMCTS(false, false, false);
         ag.initAI(Othello.WHITE_UP);
         ag.selectAction(ot.copy(), -1, maxIterations, 1000);
-        
-        outputCSV[0] = ag.stats.toStringMean();
-        outputCSV[1] = ag.stats.toStringMedian();
-        outputCSV[2] = ag.stats.toStringStdDev();
+        System.out.printf("SIZE:%d\n\tstd dev: %.6f\n\taverage: %.6f\n\tmedian: %.6f\nentropy: %.6f\ncoef.var: %.06f\n", size, ag.stats.stdDev, ag.stats.mean, ag.stats.median, ag.stats.entropy, (ag.stats.stdDev/ag.stats.mean));
+                        
+        outputCSV[0] = ag.stats.toStringMean().replace(",", ".");
+        outputCSV[1] = ag.stats.toStringMedian().replace(",", ".");
+        outputCSV[2] = ag.stats.toStringStdDev().replace(",", ".");
+        outputCSV[3] = ag.stats.toStringEntropy().replace(",", ".");
+        outputCSV[4] = ag.stats.toStringVarCoef().replace(",", ".");
         
         return outputCSV;
     }

@@ -9,6 +9,9 @@ public class Node {
     
     public Node parent;
     public double[] Q;
+    public int wins;
+    public int loss;
+    public int drawn;
     public int N;
     public int virtualN;
 
@@ -23,7 +26,9 @@ public class Node {
         this.game = game;
         Q = new double[game.PLAYERS_COUNT + 1];
         N= 0;
-        
+        wins = 0;
+        loss = 0;
+        drawn = 0;
         unexpandedMoves = new ArrayList<Move>(game.moves());
         virtualN = unexpandedMoves.size() + children.size(); // reset VirtualCHLen
 
