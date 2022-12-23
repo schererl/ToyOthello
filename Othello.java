@@ -16,12 +16,15 @@ public class Othello {
     public int mover;
 
     private int pass = 0;
-
+    private boolean utComputed;
+    private double[] ut;
     public Othello(final int sz, final int startPlayer) {
         size = sz;
         mover = startPlayer;
         grid = new int[size][size];
         numTurn = 0;
+        utComputed = false;
+        this.ut = new double[PLAYERS_COUNT];
         initPos();
     }
 
@@ -29,7 +32,9 @@ public class Othello {
         size = sz;
         mover = startPlayer;
         this.grid = new int[size][size];
+        this.ut = new double[PLAYERS_COUNT];
         numTurn = 0;
+        utComputed = false;
         for (int i = 0; i < size; i++) {
             for (int j = 0; j < size; j++) {
                this.grid[i][j] = grid[i][j];
@@ -155,26 +160,10 @@ public class Othello {
 
     /* check fr termination */
     public Boolean isTerminal() {
-        boolean terminal = false;
-        int countTot = 0;
-        for (int i = 0; i < size; i++) {
-            for (int j = 0; j < size; j++) {
-                if (grid[i][j] == BLACK_UP || grid[i][j] == WHITE_UP) {
-                    countTot++;
-                }
-            }
-        }
-        if (countTot == size * size || pass >= 2) {
-            terminal = true;
-        }
-        return terminal;
-    }
-
-    public double[] utilities() {
         int countBlack = 0;
         int countWhite = 0;
-        double[] ut = new double[PLAYERS_COUNT];
-
+        
+        boolean terminal = false;
         for (int i = 0; i < size; i++) {
             for (int j = 0; j < size; j++) {
                 if (grid[i][j] == BLACK_UP) {
@@ -184,18 +173,26 @@ public class Othello {
                 }
             }
         }
+        if (countBlack == size * size || countWhite == size*size || pass >= 2) {
+            terminal = true;
 
-        if (countBlack > countWhite) {
-            ut[this.BLACK_UP - 1] = 1;
-            ut[this.WHITE_UP - 1] = -1;
-        } else if (countBlack < countWhite) {
-            ut[this.BLACK_UP - 1] = -1;
-            ut[this.WHITE_UP - 1] = 1;
-        } else {
-            ut[this.BLACK_UP - 1] = 0;
-            ut[this.WHITE_UP - 1] = 0;
+            if (countBlack > countWhite) {
+                ut[Othello.BLACK_UP - 1] = 1;
+                ut[Othello.WHITE_UP - 1] = -1;
+            } else if (countBlack < countWhite) {
+                ut[Othello.BLACK_UP - 1] = -1;
+                ut[Othello.WHITE_UP - 1] = 1;
+            } else {
+                ut[Othello.BLACK_UP - 1] = 0;
+                ut[Othello.WHITE_UP - 1] = 0;
+            }
+            utComputed = true;
         }
-        return ut;
+        return terminal;
+    }
+
+    public double[] utilities() {
+        return this.ut;
     }
 
     private boolean validMove(int row, int col) {

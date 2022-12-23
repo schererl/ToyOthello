@@ -24,7 +24,7 @@ public class Node {
         this.parent = parent;
         this.moveFromParent = moveFromParent;
         this.game = game;
-        Q = new double[game.PLAYERS_COUNT + 1];
+        Q = new double[game.PLAYERS_COUNT];
         N= 0;
         wins = 0;
         loss = 0;

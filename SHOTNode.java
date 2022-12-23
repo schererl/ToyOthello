@@ -11,7 +11,7 @@ public class SHOTNode extends Node {
 
     public SHOTNode(final Node parent, Move moveFromParent, final Othello game) {
         super(parent, moveFromParent, game);
-        Lq = new double[game.PLAYERS_COUNT + 1];
+        Lq = new double[game.PLAYERS_COUNT];
         Ln = 0;
     }
 
@@ -50,4 +50,21 @@ public class SHOTNode extends Node {
             this.Q[i] += Lq[i];
         }
     }
+
+    public void sort(final int interval) {
+        List<SHOTNode> childrenCopy = children.subList(0, interval);
+        final int mover = game.mover;
+        Collections.sort(childrenCopy, new Comparator<Node>() {
+            @Override
+            public int compare(Node o1, Node o2) {
+                double f1 = o1.Q[mover-1]/o1.N;
+                double f2 = o2.Q[mover-1]/o2.N;
+                return Double.compare(-f1, -f2);
+            }
+        });
+        for (int i = 0; i < childrenCopy.size(); i++) {
+            children.set(i, childrenCopy.get(i));
+        }
+    }
+
 }

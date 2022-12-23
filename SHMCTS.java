@@ -130,7 +130,6 @@ public class SHMCTS extends AI {
 		// :: FINAL SELECTION
 		Node decidedNode = finalMoveSelection(root);
 		//stats.computeEntropy(decidedNode);
-		stats.computeEntropy(root);
 		smartThinkLimit -= System.currentTimeMillis() - start_time;
 		
 		root.sort(root.children.size());

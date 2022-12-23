@@ -18,47 +18,47 @@ bfactor: 5
 public class Main {
     public static void main(String args[]) throws Exception {
         //varTest();
-        //simulate();
+        simulate();
         //searchBoardConfig();
 
          
-        String[] output = statsTest(new int[][]{{0,0,0,1,2,2,2,0},{2,0,1,1,1,2,2,1},{0,1,0,1,1,1,2,1},{1,1,1,1,1,1,2,1},{0,0,1,2,2,2,1,1},{0,0,1,2,2,1,1,1},{0,1,2,0,1,1,1,2},{0,2,2,0,0,0,2,0}});
+        // String[] output = statsTest(new int[][]{{0,0,0,1,2,2,2,0},{2,0,1,1,1,2,2,1},{0,1,0,1,1,1,2,1},{1,1,1,1,1,1,2,1},{0,0,1,2,2,2,1,1},{0,0,1,2,2,1,1,1},{0,1,2,0,1,1,1,2},{0,2,2,0,0,0,2,0}});
     
-        try {
-            FileWriter fileWriter = new FileWriter("statsFull.csv");
-            BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
-            bufferedWriter.write(output[0]);
-            bufferedWriter.write(output[1]);
-            bufferedWriter.write(output[2]);
-            bufferedWriter.close();
+        // try {
+        //     FileWriter fileWriter = new FileWriter("statsFull.csv");
+        //     BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
+        //     bufferedWriter.write(output[0]);
+        //     bufferedWriter.write(output[1]);
+        //     bufferedWriter.write(output[2]);
+        //     bufferedWriter.close();
 
-            FileWriter fileWriter2 = new FileWriter("statsMean.csv");
-            BufferedWriter bufferedWriter2 = new BufferedWriter(fileWriter2);
-            bufferedWriter2.write(output[0]);
-            bufferedWriter2.close();
+        //     FileWriter fileWriter2 = new FileWriter("statsMean.csv");
+        //     BufferedWriter bufferedWriter2 = new BufferedWriter(fileWriter2);
+        //     bufferedWriter2.write(output[0]);
+        //     bufferedWriter2.close();
 
-            FileWriter fileWriter3 = new FileWriter("statsMedian.csv");
-            BufferedWriter bufferedWriter3 = new BufferedWriter(fileWriter3);
-            bufferedWriter3.write(output[1]);
-            bufferedWriter3.close();
+        //     FileWriter fileWriter3 = new FileWriter("statsMedian.csv");
+        //     BufferedWriter bufferedWriter3 = new BufferedWriter(fileWriter3);
+        //     bufferedWriter3.write(output[1]);
+        //     bufferedWriter3.close();
 
-            FileWriter fileWriter4 = new FileWriter("statsSTDDev.csv");
-            BufferedWriter bufferedWriter4 = new BufferedWriter(fileWriter4);
-            bufferedWriter4.write(output[2]);
-            bufferedWriter4.close();
+        //     FileWriter fileWriter4 = new FileWriter("statsSTDDev.csv");
+        //     BufferedWriter bufferedWriter4 = new BufferedWriter(fileWriter4);
+        //     bufferedWriter4.write(output[2]);
+        //     bufferedWriter4.close();
 
-            FileWriter fileWriter5= new FileWriter("statsEntropy.csv");
-            BufferedWriter bufferedWriter5 = new BufferedWriter(fileWriter5);
-            bufferedWriter5.write(output[3]);
-            bufferedWriter5.close();
+        //     FileWriter fileWriter5= new FileWriter("statsEntropy.csv");
+        //     BufferedWriter bufferedWriter5 = new BufferedWriter(fileWriter5);
+        //     bufferedWriter5.write(output[3]);
+        //     bufferedWriter5.close();
 
-            FileWriter fileWriter6= new FileWriter("statsVarCoef.csv");
-            BufferedWriter bufferedWriter6 = new BufferedWriter(fileWriter6);
-            bufferedWriter6.write(output[4]);
-            bufferedWriter6.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        //     FileWriter fileWriter6= new FileWriter("statsVarCoef.csv");
+        //     BufferedWriter bufferedWriter6 = new BufferedWriter(fileWriter6);
+        //     bufferedWriter6.write(output[4]);
+        //     bufferedWriter6.close();
+        // } catch (IOException e) {
+        //     e.printStackTrace();
+        // }
         
        
          
@@ -170,8 +170,8 @@ public class Main {
     }
 
     private static void simulate() throws Exception {
-        final int numberPlayouts = 1;
-        final int othelloSize = 8;
+        final int numberPlayouts = 100;
+        final int othelloSize = 16;
         final int budget = 1000;
         final boolean debug = true;
 
@@ -199,8 +199,8 @@ public class Main {
                 if (debug) {
                     float aux = b / (float) (d);
                     int player = cp.mover;
-                    //System.out.print("\033[H\033[2J");
-                    //System.out.flush();
+                    System.out.print("\033[H\033[2J");
+                    System.out.flush();
                     cp.paintLegalMoves(moves);
 
                     System.out
@@ -213,12 +213,12 @@ public class Main {
                     if (cp.mover == ag.player)
                         m = ag.selectAction(cp.copy(), -1, budget, 1000);
                     else
-                        m = ag.selectAction(cp.copy(), -1, budget, 1000);
+                        m = op.selectAction(cp.copy(), -1, budget, 1000);
                     // m = moves.get(ThreadLocalRandom.current().nextInt(moves.size()));
                     cp.apply(m);
 
-                    //System.out.print("\033[H\033[2J");
-                    //System.out.flush();
+                    System.out.print("\033[H\033[2J");
+                    System.out.flush();
                     cp.printfBoard();
 
                     System.out.println(
@@ -229,9 +229,10 @@ public class Main {
 
                 } else {
                     if (cp.mover == ag.player) {
-                        cp.apply(ag.selectAction(cp, -1, 10000, 500));
+                        cp.apply(ag.selectAction(cp, -1, budget, 500));
                     } else
-                        cp.apply(op.selectAction(cp, -1, 10000, 500));
+                        //cp.apply(moves.get(ThreadLocalRandom.current().nextInt(moves.size())));    
+                        cp.apply(op.selectAction(cp, -1, budget, 500));
 
                     System.out.print("\033[H\033[2J");
                     System.out.flush();

@@ -44,10 +44,10 @@ public class Statistics {
 		if(chLen%2==0){
 			Node m1 = node.children.get( (chLen/2) - 1);
 			Node m2 = node.children.get( (chLen/2 + 1) - 1);
-			median = (m1.Q[m1.game.mover]/m1.N + m2.Q[m1.game.mover]/m2.N)/2f;
+			median = (m1.Q[m1.game.mover-1]/m1.N + m2.Q[m1.game.mover-1]/m2.N)/2f;
 		}else{
-		    Node m = node.children.get((int)Math.ceil(chLen/2)-1);
-		    median = m.Q[m.game.mover]/m.N;
+		    Node m = node.children.get((int)Math.ceil(chLen/2));
+		    median = m.Q[m.game.mover-1]/m.N;
         }
         medianTrack.add(median);
     }
