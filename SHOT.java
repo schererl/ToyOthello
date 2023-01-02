@@ -5,14 +5,15 @@ public class SHOT extends AI {
     final boolean debug = false;
     int player;
     final boolean TIME_BASED;
-
     public SHOT(boolean timeBased) {
         TIME_BASED = timeBased;
+        friendlyName = "SHOT";
     }
 
     @Override
     public void initAI(final int playerID) {
         super.initAI(playerID);
+        stats = new Statistics();
     }
 
     @Override
@@ -20,6 +21,11 @@ public class SHOT extends AI {
             final double maxSeconds,
             final int maxIterations,
             final int maxDepth) {
+        stats.clear();
+        stats.startCronometer();
+        super.countNodes=0;
+        countZero=0;
+        resto= 0;
 
         SHOTNode root = new SHOTNode(null, null, game);
         int budget;
@@ -49,10 +55,10 @@ public class SHOT extends AI {
             layerBudget = getLayerBudget(this.TIME_BASED ? budget() : budget, root.children.size(),
                     virtualChildrenLenght);
             for (int i = 0; i < virtualChildrenLenght; i++) {
-                if (root.Ln > budget || checkTimeout()) {
-                    root.sort(virtualChildrenLenght);
-                    break;
-                }
+                // if ( (layerBudget==1 && root.Ln > budget) || checkTimeout()) {
+                //      root.sort(virtualChildrenLenght);
+                //      break;
+                // }
                 SHOTNode child = root.children.get(i);
                 child.openLayer();
                 search(child, layerBudget);
@@ -65,7 +71,8 @@ public class SHOT extends AI {
         }
 
         root.closeLayer();
-
+        stats.endCronometer();
+        System.out.printf("COUNT 0 %d\n", countZero);
         return root.children.get(0).moveFromParent;
 
     }
@@ -85,6 +92,7 @@ public class SHOT extends AI {
             Othello gameCpy = node.game.copy();
             super.playout(gameCpy, 1000);
             node.updateLayerValues(gameCpy.utilities());
+            super.countNodes++;
             return;
         }
 
@@ -101,7 +109,7 @@ public class SHOT extends AI {
         if (node.children.size() == 1 && node.unexpandedMoves.size() == 0) {
             SHOTNode child = node.children.get(0);
             child.openLayer();
-            search(child, budget - 1);
+            search(child, budget);
             node.updateLayerValues(child);
             child.closeLayer();
             return;
@@ -114,7 +122,7 @@ public class SHOT extends AI {
             layerBudget = getLayerBudget(budget, node.children.size(), virtualChildrenLenght);
 
             for (int i = 0; i < virtualChildrenLenght; i++) {
-                if (node.Ln > budget || checkTimeout()) {
+                if ( (layerBudget==1 && node.Ln > budget) || checkTimeout()) {
                     node.sort(virtualChildrenLenght);
                     return;
                 }
@@ -132,7 +140,12 @@ public class SHOT extends AI {
     }
 
     private int getLayerBudget(int budget, int childrenLenght, int virtualChildrenLenght) {
-        double totalLayers = Math.log(childrenLenght) / Math.log(2) * virtualChildrenLenght;
+        double totalLayers = Math.ceil(Math.log(childrenLenght) / Math.log(2)) * virtualChildrenLenght;
+        if((int) Math.floor(budget / totalLayers) == 0){
+            countZero+= 1;
+            
+        }
+        resto+= budget / totalLayers - Math.floor(budget / totalLayers);
         return Math.max(1, (int) Math.floor(budget / totalLayers));
     }
 
@@ -161,7 +174,7 @@ public class SHOT extends AI {
             childNode.closeLayer();
 
             budgetLeft--;
-
+            super.countNodes++;
         }
         return budgetLeft;
     }

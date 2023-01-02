@@ -49,6 +49,11 @@ public class SHOTNode extends Node {
         for (int i = 0; i < Lq.length; i++) {
             this.Q[i] += Lq[i];
         }
+
+        this.Ln = 0;
+        for (int i = 0; i < Lq.length; i++) {
+            this.Lq[i] = 0;
+        }
     }
 
     public void sort(final int interval) {

@@ -20,11 +20,9 @@ public class SHMCTS extends AI {
 	protected long smartThinkLimit = 0;
 	protected int lastActionHistorySize = 0;
 
-	public Statistics stats;
-	static int internal = 0;
 	
 	public SHMCTS(final boolean tr, final boolean h, final boolean ta) {
-		this.friendlyName = "SHMCTS";
+		this.friendlyName = "UCT";
 		USE_HALVE = h;
 		USE_TIME_ADAPTATIVE = ta;
 	}
@@ -57,8 +55,11 @@ public class SHMCTS extends AI {
 		final long start_time = System.currentTimeMillis();
 		final int maxIts = (maxIterations >= 0) ? maxIterations : Integer.MAX_VALUE;
 		final int initialPlayDepth = game.numTurn;
-		stats = new Statistics();
-		internal=0;
+		
+		stats.clear();
+        stats.startCronometer();
+		super.countNodes=0;
+        
 		/* both can change if estimaTimeBonus is true */
 		long smartThink = MINIMUM_SMART_THINKING_TIME;
 		long stopTime = smartThink + start_time; // (maxSeconds > 0.0) ? start_time + (long) smartThink/*(maxSeconds *
@@ -116,13 +117,13 @@ public class SHMCTS extends AI {
 			++numIterations;
 			pass_time = System.currentTimeMillis() - start_time;
 
-			if(numIterations%100==0){
-				stats.computeStandardDeviation(root);
-				stats.computeMean(root);
-				stats.computeMedian(root);
-				stats.computeEntropy(root);
-				stats.computeVarCoef(root);
-			}
+			// if(numIterations%100==0){
+			// 	stats.computeStandardDeviation(root);
+			// 	stats.computeMean(root);
+			// 	stats.computeMedian(root);
+			// 	stats.computeEntropy(root);
+			// 	stats.computeVarCoef(root);
+			// }
 		}
 		//System.out.println(var);
 		final long end_time = System.currentTimeMillis();
@@ -132,11 +133,12 @@ public class SHMCTS extends AI {
 		//stats.computeEntropy(decidedNode);
 		smartThinkLimit -= System.currentTimeMillis() - start_time;
 		
+        stats.endCronometer();
 		root.sort(root.children.size());
 		return decidedNode.moveFromParent;
 	}
 
-	public static Node search(final Node root) {
+	public Node search(final Node root) {
 		Node current = root;
 		while (true) {
 
@@ -148,7 +150,7 @@ public class SHMCTS extends AI {
 						ThreadLocalRandom.current().nextInt(current.unexpandedMoves.size()));
 				final Othello game = current.game.copy();
 				game.apply(move);
-				internal++;
+				super.countNodes++;
 				return new Node(current, move, game);
 			}
 
@@ -158,7 +160,7 @@ public class SHMCTS extends AI {
 		return current;
 	} 
 
-	public static void backpropagation(final Othello playoutGame, Node current, final int numTurns) {
+	public void backpropagation(final Othello playoutGame, Node current, final int numTurns) {
 
 		final double[] utilities = playoutGame.utilities();
 		final double[] discUtilities = playoutGame.utilities();
@@ -220,6 +222,5 @@ public class SHMCTS extends AI {
 
 		return bestChild;
 	}
-
-
+	
 }

@@ -14,6 +14,11 @@ public class Statistics {
     Double entropy;
     Double varCoef;
 
+    long startCronometer;
+    long stopCronometer;
+
+    long NCronometer;
+    double sumCronometer;
     public Statistics(){
         stdDev = 0.0;
         mean=0.0;
@@ -24,6 +29,33 @@ public class Statistics {
         medianTrack = new ArrayList<>();        
         entropyTrack = new ArrayList<>();
         varCoefTrack = new ArrayList<>();
+
+        startCronometer = 0;
+        stopCronometer = 0;
+        NCronometer = 0;
+        sumCronometer = 0;
+    }
+
+    public void clear(){    
+        stdDev = 0.0;
+        mean=0.0;
+        median=0.0;
+        varCoef=0.0;
+        stdDevTrack = new ArrayList<>();
+        meanTrack = new ArrayList<>();
+        medianTrack = new ArrayList<>();        
+        entropyTrack = new ArrayList<>();
+        varCoefTrack = new ArrayList<>();
+    }
+
+    public void startCronometer(){
+        startCronometer =  System.currentTimeMillis();
+    }
+
+    public void endCronometer(){
+        stopCronometer =  System.currentTimeMillis();
+        NCronometer+=1;
+        sumCronometer+=(stopCronometer-startCronometer)/1000f;
     }
 
     public void computeMean(final Node node){
@@ -91,13 +123,19 @@ public class Statistics {
     }
 
     public void computeEntropy(final Node node){
-
-
         double winProb = node.wins/(double)node.N;
         double drawnProb = node.drawn/(double)node.N;
         double lossProb = node.loss/(double)node.N;
         entropy = -1 * ((winProb * Math.log(winProb)) + (drawnProb * Math.log(drawnProb)) + (lossProb * Math.log(lossProb)));
         entropyTrack.add(entropy);
+    }
+
+    public String toStringTime(){
+        if(NCronometer == 0) return "0";
+        
+        String output = String.format("%.4f s", sumCronometer/Double.valueOf(NCronometer), 0);
+
+        return output;
     }
 
     public String toStringMean(){
