@@ -18,6 +18,7 @@ public class Othello {
     private int pass = 0;
     private boolean utComputed;
     private double[] ut;
+
     public Othello(final int sz, final int startPlayer) {
         size = sz;
         mover = startPlayer;
@@ -35,9 +36,20 @@ public class Othello {
         this.ut = new double[PLAYERS_COUNT];
         numTurn = 0;
         utComputed = false;
-        for (int i = 0; i < size; i++) {
-            for (int j = 0; j < size; j++) {
-               this.grid[i][j] = grid[i][j];
+
+        if (sz > grid.length) {
+            int offset = sz - grid.length;
+
+            for (int i = 0; i < grid.length; i++) {
+                for (int j = 0; j < grid.length; j++) {
+                    this.grid[i][j] = grid[i + offset][j + offset];
+                }
+            }
+        } else {
+            for (int i = 0; i < size; i++) {
+                for (int j = 0; j < size; j++) {
+                    this.grid[i][j] = grid[i][j];
+                }
             }
         }
     }
@@ -55,15 +67,17 @@ public class Othello {
     }
 
     /*
-     SIZE:8
-        std dev: 0,053118
-        average: 0,830069
-        median: -0,545913
-
-    it:5677
-    curr state: {{0,0,0,1,2,2,2,0},{2,0,1,1,1,2,2,1},{0,1,0,1,1,1,2,1},{1,1,1,1,1,1,2,1},{0,0,1,2,2,2,1,1},{0,0,1,2,2,1,1,1},{0,1,2,0,1,1,1,2},{0,2,2,0,0,0,2,0}}
-    bfactor: 15
-     
+     * SIZE:8
+     * std dev: 0,053118
+     * average: 0,830069
+     * median: -0,545913
+     * 
+     * it:5677
+     * curr state:
+     * {{0,0,0,1,2,2,2,0},{2,0,1,1,1,2,2,1},{0,1,0,1,1,1,2,1},{1,1,1,1,1,1,2,1},{0,0
+     * ,1,2,2,2,1,1},{0,0,1,2,2,1,1,1},{0,1,2,0,1,1,1,2},{0,2,2,0,0,0,2,0}}
+     * bfactor: 15
+     * 
      */
     public void initPos() {
         final int W1i = size / 2 + 1;
@@ -162,7 +176,7 @@ public class Othello {
     public Boolean isTerminal() {
         int countBlack = 0;
         int countWhite = 0;
-        
+
         boolean terminal = false;
         for (int i = 0; i < size; i++) {
             for (int j = 0; j < size; j++) {
@@ -173,7 +187,7 @@ public class Othello {
                 }
             }
         }
-        if (countBlack == size * size || countWhite == size*size || pass >= 2) {
+        if (countBlack == size * size || countWhite == size * size || pass >= 2) {
             terminal = true;
 
             if (countBlack > countWhite) {
@@ -362,7 +376,7 @@ public class Othello {
             output += "},";
         }
         output = output.substring(0, output.length() - 1);
-            
+
         output += "}";
         return output;
     }

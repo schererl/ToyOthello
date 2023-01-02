@@ -14,12 +14,12 @@ public class SHMCTS extends AI {
 	private final boolean USE_TIME_ADAPTATIVE;
 	
 	
-	protected int player = -1;
 	protected Node root = null;
 	protected static SelectionPolicy policy;
 	protected long smartThinkLimit = 0;
 	protected int lastActionHistorySize = 0;
 
+	protected String armsStats="";
 	
 	public SHMCTS(final boolean tr, final boolean h, final boolean ta) {
 		this.friendlyName = "UCT";
@@ -79,6 +79,8 @@ public class SHMCTS extends AI {
 		this.root.virtualN = root.children.size() + root.unexpandedMoves.size();
 		while (numIterations < maxIts ) {
 
+
+
 			/* TIME BONUS */
 			if (useTimeAdaptative && pass_time >= smartThink / 2) {
 				double avgDepth = validDepths > 0 ? sumDepths / Math.max(1, validDepths) : 0;
@@ -88,7 +90,10 @@ public class SHMCTS extends AI {
 			}
 
 			/* :: SEQUENTIAL HALVING */
-			if (needHalve && isHalveTime(pass_time, smartThink, halve)) {
+			if (needHalve && (isHalveTime(numIterations, maxIts, halve) /*|| isHalveTime(pass_time, smartThink, halve)*/)) {
+				//double v = maxIts / (Math.pow(2, halve + 1));
+				//double v2 = maxIts - v;
+				
 				if (root.virtualN <= 4)
 					needHalve = false;
 				root.sort(Math.min(root.children.size(), root.virtualN));
@@ -117,13 +122,19 @@ public class SHMCTS extends AI {
 			++numIterations;
 			pass_time = System.currentTimeMillis() - start_time;
 
-			// if(numIterations%100==0){
-			// 	stats.computeStandardDeviation(root);
-			// 	stats.computeMean(root);
-			// 	stats.computeMedian(root);
-			// 	stats.computeEntropy(root);
-			// 	stats.computeVarCoef(root);
-			// }
+
+			
+			if(numIterations%100==0){
+				for(Node child: root.children){
+					if(child.stats==null)child.stats=new Statistics();
+					child.stats.computeMean(child);
+				}
+				stats.computeStandardDeviation(root);
+				stats.computeMean(root);
+				stats.computeMedian(root);
+				stats.computeEntropy(root);
+				stats.computeVarCoef(root);
+			}
 		}
 		//System.out.println(var);
 		final long end_time = System.currentTimeMillis();
@@ -134,7 +145,15 @@ public class SHMCTS extends AI {
 		smartThinkLimit -= System.currentTimeMillis() - start_time;
 		
         stats.endCronometer();
-		root.sort(root.children.size());
+		root.sort(root.virtualN);
+		
+		if(root.children.size()>4){
+			armsStats  = root.children.get(0).moveFromParent + root.children.get(0).stats.toStringMean()+"\n";
+			armsStats += root.children.get(1).moveFromParent + root.children.get(1).stats.toStringMean()+"\n";
+			armsStats += root.children.get(2).moveFromParent + root.children.get(2).stats.toStringMean()+"\n";
+			armsStats += root.children.get(3).moveFromParent + root.children.get(3).stats.toStringMean()+"\n";
+		}
+		printEvaluation(root);
 		return decidedNode.moveFromParent;
 	}
 
@@ -150,7 +169,6 @@ public class SHMCTS extends AI {
 						ThreadLocalRandom.current().nextInt(current.unexpandedMoves.size()));
 				final Othello game = current.game.copy();
 				game.apply(move);
-				super.countNodes++;
 				return new Node(current, move, game);
 			}
 
@@ -189,14 +207,13 @@ public class SHMCTS extends AI {
 		}
 	}
 
-	private void printEvaluation(Node n, long init, long end) {
+	private void printEvaluation(Node n) {
 		System.out.println(String.format("ROOT  %d nodes", n.N));
 		for (Node ch : n.children) {
-			// System.out.println(String.format("\t%s | (%.0f/%d) %.4f", ch.moveFromParent,
-			// ch.Q[this.player],
-			// ch.N,ch.Q[this.player]/ch.N));
+			System.out.println(String.format("\t%s | (%.0f/%d) %.4f", ch.moveFromParent,
+			ch.Q[this.player-1],
+			ch.N,ch.Q[this.player-1]/ch.N));
 		}
-		System.out.printf("ELAPSED TIME: %d\n", end - init);
 	}
 
 	public static Node finalMoveSelection(final Node rootNode) {
@@ -222,5 +239,5 @@ public class SHMCTS extends AI {
 
 		return bestChild;
 	}
-	
+
 }

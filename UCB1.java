@@ -26,14 +26,14 @@ public class UCB1 implements SelectionPolicy{
                 bestChild = child;
                 numBestFound = 1;
             }
-            else if 
-            (
-            	ucb1Value == bestValue && 
-            	ThreadLocalRandom.current().nextInt() % ++numBestFound == 0
-            )
-            {
-            	bestChild = child;
-            }
+            // else if 
+            // (
+            // 	ucb1Value == bestValue && 
+            // 	ThreadLocalRandom.current().nextInt() % ++numBestFound == 0
+            // )
+            // {
+            // 	bestChild = child;
+            // }
         }
 
         return bestChild;

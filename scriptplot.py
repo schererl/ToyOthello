@@ -2,9 +2,10 @@ import matplotlib.pyplot as plt
 import csv
 
 # Open the CSV file
-stats_name = "VarCoef"
-file_name = "stats"+stats_name+".csv"
-board = "24x24"
+agent_name = "UCT"
+stats_name = ""
+file_name = "UCT.csv" #"stats"+stats_name+".csv"
+board = "12x12"
 with open(file_name, "r") as f:
     # Read the data from the file using the csv reader  
     reader = csv.reader(f, delimiter=";")
@@ -17,12 +18,12 @@ with open(file_name, "r") as f:
             continue
         # convert the values to float
         bfactor_values.append(str(row[0]))
-        data.append([float(x) for x in row[11:]])
+        data.append([float(x) for x in row[1:]])
 # Create a figure and axis object
 fig, ax = plt.subplots()
 
 # Set the x-axis values
-x_values = list(range(1000, 25000, 100))
+x_values = list(range(1, 1000, 100))
 
 # Plot each data series
 for i, d in enumerate(data):
@@ -30,11 +31,11 @@ for i, d in enumerate(data):
 
 # Add a legend and title
 ax.legend()
-ax.set_title("UCT"+stats_name+board)
+ax.set_title(agent_name+stats_name+board)
 ax.set_xlabel("arm pulls")
 ax.set_ylabel(stats_name)
 
 # Show the plot
 
-plt.savefig("UCT_stat"+stats_name+board+".png")
+plt.savefig(agent_name+"_stat"+stats_name+board+".png")
 plt.show()

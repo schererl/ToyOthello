@@ -5,6 +5,7 @@ public class SHOT extends AI {
     final boolean debug = false;
     int player;
     final boolean TIME_BASED;
+
     public SHOT(boolean timeBased) {
         TIME_BASED = timeBased;
         friendlyName = "SHOT";
@@ -23,16 +24,14 @@ public class SHOT extends AI {
             final int maxDepth) {
         stats.clear();
         stats.startCronometer();
-        super.countNodes=0;
-        countZero=0;
-        resto= 0;
-
+        super.countNodes = 0;
+        
         SHOTNode root = new SHOTNode(null, null, game);
         int budget;
         root.openLayer();
 
         if (TIME_BASED) {
-            budget = 0; //estimateBudget(game, root, maxSeconds);
+            budget = 0; // estimateBudget(game, root, maxSeconds);
         } else {
             budget = maxIterations;
         }
@@ -47,32 +46,17 @@ public class SHOT extends AI {
             return root.children.get(0).moveFromParent;
 
         root.openLayer();
-
-        int virtualChildrenLenght = root.children.size();
-        int layerBudget = 0;
-        while (virtualChildrenLenght > 1) {
-            //
-            layerBudget = getLayerBudget(this.TIME_BASED ? budget() : budget, root.children.size(),
-                    virtualChildrenLenght);
-            for (int i = 0; i < virtualChildrenLenght; i++) {
-                // if ( (layerBudget==1 && root.Ln > budget) || checkTimeout()) {
-                //      root.sort(virtualChildrenLenght);
-                //      break;
-                // }
-                SHOTNode child = root.children.get(i);
-                child.openLayer();
-                search(child, layerBudget);
-
-                root.updateLayerValues(child);
-                child.closeLayer();
-            }
-            root.sort(virtualChildrenLenght);
-            virtualChildrenLenght = (int) Math.ceil(virtualChildrenLenght / 2f);
-        }
-
+        search(root, budget);
         root.closeLayer();
+        
+        if(root.children.size()>1){
+            int unspendBudget = budget-root.N;
+            search(root.children.get(1), unspendBudget);
+            root.sort(2);
+        }
+        
+
         stats.endCronometer();
-        System.out.printf("COUNT 0 %d\n", countZero);
         return root.children.get(0).moveFromParent;
 
     }
@@ -92,7 +76,6 @@ public class SHOT extends AI {
             Othello gameCpy = node.game.copy();
             super.playout(gameCpy, 1000);
             node.updateLayerValues(gameCpy.utilities());
-            super.countNodes++;
             return;
         }
 
@@ -117,19 +100,17 @@ public class SHOT extends AI {
 
         /* SEQUENTIAL HALVING CASE */
         int virtualChildrenLenght = node.children.size();
-        int layerBudget = 0;
+        int childBudget = 0;
+        double layerBudget = budget / (Math.ceil(Math.log(node.children.size()) / Math.log(2)));
         while (virtualChildrenLenght > 1) {
-            layerBudget = getLayerBudget(budget, node.children.size(), virtualChildrenLenght);
+            childBudget = Math.max(1, (int) Math.floor(layerBudget / virtualChildrenLenght));
 
-            for (int i = 0; i < virtualChildrenLenght; i++) {
-                if ( (layerBudget==1 && node.Ln > budget) || checkTimeout()) {
-                    node.sort(virtualChildrenLenght);
-                    return;
-                }
+            int itChildren = (layerBudget < virtualChildrenLenght?(int)Math.floor(layerBudget):virtualChildrenLenght);
+            for (int i = 0; i < itChildren; i++) {
 
                 SHOTNode child = node.children.get(i);
                 child.openLayer();
-                search(child, layerBudget);
+                search(child, childBudget);
 
                 node.updateLayerValues(child);
                 child.closeLayer();
@@ -137,16 +118,6 @@ public class SHOT extends AI {
             node.sort(virtualChildrenLenght);
             virtualChildrenLenght = (int) Math.ceil(virtualChildrenLenght / 2f);
         }
-    }
-
-    private int getLayerBudget(int budget, int childrenLenght, int virtualChildrenLenght) {
-        double totalLayers = Math.ceil(Math.log(childrenLenght) / Math.log(2)) * virtualChildrenLenght;
-        if((int) Math.floor(budget / totalLayers) == 0){
-            countZero+= 1;
-            
-        }
-        resto+= budget / totalLayers - Math.floor(budget / totalLayers);
-        return Math.max(1, (int) Math.floor(budget / totalLayers));
     }
 
     private int expand(SHOTNode node, int budget) {
@@ -174,7 +145,6 @@ public class SHOT extends AI {
             childNode.closeLayer();
 
             budgetLeft--;
-            super.countNodes++;
         }
         return budgetLeft;
     }

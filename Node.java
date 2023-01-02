@@ -4,6 +4,8 @@ import java.util.Comparator;
 import java.util.List;
 
 public class Node {
+    public Statistics stats;
+
     public final Othello game;
     public final Move moveFromParent;
     
@@ -51,13 +53,13 @@ public class Node {
 
     public void sort(final int interval) {
         List<Node> childrenCopy = children.subList(0, interval);
-        final int mover = game.mover;
+        final int moverPos = game.mover-1;
         Collections.sort(childrenCopy, new Comparator<Node>() {
             @Override
             public int compare(Node o1, Node o2) {
-                double f1 = o1.N;
-                double f2 = o2.N;
-                return Double.compare(-f1, -f2);
+                double f1 = o1.Q[moverPos]/o1.N;
+                double f2 = o2.Q[moverPos]/o2.N;
+                return Double.compare(f2, f1);
             }
         });
         for (int i = 0; i < childrenCopy.size(); i++) {

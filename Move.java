@@ -5,4 +5,9 @@ public class Move {
         pos[0] = i;
         pos[1] = j;
     }
+
+    @Override
+    public String toString(){
+        return String.format("INSERT (%d %d)", pos[0], pos[1]);
+    }
 }
