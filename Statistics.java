@@ -7,12 +7,15 @@ public class Statistics {
     ArrayList<Double> entropyTrack;
     ArrayList<Double> varCoefTrack;
 
+    ArrayList<Double> stdDevAllocationTrack;
+
 
     Double stdDev;
     Double mean;
     Double median;
     Double entropy;
     Double varCoef;
+    Double stdDevAllocation;
 
     long startCronometer;
     long stopCronometer;
@@ -24,11 +27,14 @@ public class Statistics {
         mean=0.0;
         median=0.0;
         varCoef=0.0;
+        stdDevAllocation=0.0;
         stdDevTrack = new ArrayList<>();
         meanTrack = new ArrayList<>();
         medianTrack = new ArrayList<>();        
         entropyTrack = new ArrayList<>();
         varCoefTrack = new ArrayList<>();
+
+        stdDevAllocationTrack = new ArrayList<>();
 
         startCronometer = 0;
         stopCronometer = 0;
@@ -103,6 +109,23 @@ public class Statistics {
         stdDevTrack.add(stdDev);
     }
 
+    public void computeAllocation(final Node node){
+        double sumN = 0;
+		double average = 0;
+
+		for(Node ch:node.children){
+			sumN+= ch.N;
+		}
+		average = sumN/Double.valueOf(node.children.size());
+		double sumDist=0;
+		for(Node ch:node.children){
+			sumDist+= Math.pow((ch.Q[node.game.mover-1]/Double.valueOf(ch.N))-average,2);
+		}
+		
+        stdDevAllocation = Math.sqrt((double)sumDist/Double.valueOf(node.children.size()));
+        stdDevAllocationTrack.add(stdDevAllocation);
+    }
+
     public void computeVarCoef(final Node node){
         double sumRw = 0;
 		double sumN = 0;
@@ -119,6 +142,7 @@ public class Statistics {
 		}
 		//divide pela média: coeficiente de variação
         varCoef = Math.sqrt(sumDist/sumN)/average;
+        
         varCoefTrack.add(varCoef);
     }
 
@@ -147,6 +171,17 @@ public class Statistics {
         //outputCSV += "\n";
         return outputCSV;
     }
+
+    public String toStringStdDevAllocation(){
+        String outputCSV = "";
+        outputCSV += String.valueOf("StdDevAllocation");
+        for (Double v : this.stdDevAllocationTrack) {
+            outputCSV += String.format(";%.4f", v);
+        }
+        //outputCSV += "\n";
+        return outputCSV;
+    }
+
     public String toStringMedian(){
         String outputCSV = "";
         outputCSV += String.valueOf("Median");

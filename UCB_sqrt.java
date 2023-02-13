@@ -1,6 +1,6 @@
 import java.util.concurrent.ThreadLocalRandom;
 
-public class UCB1 extends SelectionPolicy{
+public class UCB_sqrt extends SelectionPolicy{
     
     public Node select(final Node current){
 
@@ -11,14 +11,14 @@ public class UCB1 extends SelectionPolicy{
         final int numChildren = Math.min(current.virtualN, current.children.size());
         final int mover = current.game.mover;
         final int moverPos = mover-1;
-        final double twoParentLog = 2.0 * Math.log(Math.max(1, current.N));
+        final double twoParentLog = 2.0 * Math.sqrt(Math.max(1, current.N));
         
         for (int i = 0; i < numChildren; ++i) 
         {
         	final Node child = current.children.get(i);
         	final double exploit = child.Q[moverPos] / child.N;
         	final double explore = Math.sqrt(twoParentLog / child.N);
-        	final double ucb1Value = exploit + (super.expCoef*explore);
+        	final double ucb1Value = exploit + (Math.sqrt(2)*explore);
             
             if (ucb1Value > bestValue)
             {

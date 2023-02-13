@@ -8,41 +8,50 @@ public class SHMCTS extends AI {
 
 	private final boolean debug = false;
 	private static final double DISCOUNT_FACTOR = 0.999;
-	private static final long MINIMUM_SMART_THINKING_TIME = 500l;
-	private static final long MAXIMUM_SMART_THINKING_TIME = 60000l;
 	private final boolean USE_HALVE;
-	private final boolean USE_TIME_ADAPTATIVE;
-	
-	
+	private final boolean USE_UCB_SQRT;
+
 	protected Node root = null;
-	protected static SelectionPolicy policy;
+	protected static SelectionPolicy searchPolicy;
+	protected static SelectionPolicy rootPolicy; // SHMCTS
 	protected long smartThinkLimit = 0;
 	protected int lastActionHistorySize = 0;
 
-	protected String armsStats="";
-	
-	public SHMCTS(final boolean tr, final boolean h, final boolean ta) {
-		this.friendlyName = "UCT";
+	protected String armsStats = "";
+
+	public SHMCTS(final boolean h, final boolean ucb_sqrt) {
 		USE_HALVE = h;
-		USE_TIME_ADAPTATIVE = ta;
+		USE_UCB_SQRT = ucb_sqrt;
+
+		if (!USE_HALVE && !USE_UCB_SQRT)
+			this.friendlyName = "UCT";
+		else if (USE_HALVE && !USE_UCB_SQRT)
+			this.friendlyName = "UCT_SH";
+		else if (!USE_HALVE && USE_UCB_SQRT)
+			this.friendlyName = "UCT_SQRT";
+		else
+			this.friendlyName = "UCT_SH_SQRT";
+
+		SHMCTS.searchPolicy = new UCB1();
+		if (ucb_sqrt) {
+			rootPolicy = new UCB_sqrt();
+
+		} else { // UCT_SH
+			rootPolicy = new UCB1();
+			rootPolicy.setExpCoef(2 * rootPolicy.EXPLORATION_COEFFICIENT);
+		}
+
 	}
 
 	@Override
 	public void initAI(final int playerID) {
-        super.initAI(playerID);
-    	SHMCTS.policy = new UCB1();
-		smartThinkLimit = MAXIMUM_SMART_THINKING_TIME;
-	}
-
-	public boolean isHalveTime(final long pass_time, final double TIME_LIMIT, final int halve) {
-		return (pass_time >= (TIME_LIMIT - (double) TIME_LIMIT / (Math.pow(2, halve + 1))));
+		super.initAI(playerID);
 
 	}
 
-	// gives a bonus for thinking time if it is allowed
-	public long bonusTT(long minimumTime, double avgDepth, long remainingTime, int numberPlayers) {
-		return (long) Math.max(minimumTime,
-				Math.min(2000, Math.floor(remainingTime / Math.max(1, avgDepth / numberPlayers)))) - minimumTime;
+	public boolean isHalveTime(final long usedResources, final double globalResource, final int halve) {
+		return (usedResources >= (globalResource - (double) globalResource / (Math.pow(2, halve + 1))));
+
 	}
 
 	@Override
@@ -54,56 +63,34 @@ public class SHMCTS extends AI {
 
 		final long start_time = System.currentTimeMillis();
 		final int maxIts = (maxIterations >= 0) ? maxIterations : Integer.MAX_VALUE;
-		final int initialPlayDepth = game.numTurn;
-		
-		stats.clear();
-        stats.startCronometer();
-		super.countNodes=0;
-        
-		/* both can change if estimaTimeBonus is true */
-		long smartThink = MINIMUM_SMART_THINKING_TIME;
-		long stopTime = smartThink + start_time; // (maxSeconds > 0.0) ? start_time + (long) smartThink/*(maxSeconds *
-													// smartThink)*/ : Long.MAX_VALUE;
 
+		stats.clear();
+		stats.startCronometer();
+		super.countNodes = 0;
 		/* both can be turned off when a certain condition is reach */
 		Boolean needHalve = USE_HALVE;
-		Boolean useTimeAdaptative = USE_TIME_ADAPTATIVE;
 
-		int sumDepths = 0;
-		int validDepths = 0;
 		int halve = 0;
 		int numIterations = 0;
 
-		long pass_time = System.currentTimeMillis() - start_time;
 		this.root = new Node(null, null, game);
 		this.root.virtualN = root.children.size() + root.unexpandedMoves.size();
-		while (numIterations < maxIts ) {
-
-
-
-			/* TIME BONUS */
-			if (useTimeAdaptative && pass_time >= smartThink / 2) {
-				double avgDepth = validDepths > 0 ? sumDepths / Math.max(1, validDepths) : 0;
-				useTimeAdaptative = false;
-				smartThink += bonusTT(smartThink, avgDepth, smartThinkLimit, Othello.PLAYERS_COUNT - 1);
-				stopTime = start_time + (long) (maxSeconds * smartThink);
-			}
-
+		while (numIterations < maxIts) {
 			/* :: SEQUENTIAL HALVING */
-			if (needHalve && (isHalveTime(numIterations, maxIts, halve) /*|| isHalveTime(pass_time, smartThink, halve)*/)) {
-				//double v = maxIts / (Math.pow(2, halve + 1));
-				//double v2 = maxIts - v;
-				
-				if (root.virtualN <= 4)
-					needHalve = false;
+			if (needHalve && root.virtualN >= 4 && root.unexpandedMoves.size() == 0
+					&& isHalveTime(numIterations, maxIts, halve)) {
 				root.sort(Math.min(root.children.size(), root.virtualN));
 				halve += 1;
 				root.virtualN = (int) Math
-						.max(Math.ceil((root.children.size() + root.unexpandedMoves.size()) / Math.pow(2, halve)), 4);
+						.max(Math.ceil(root.children.size() / Math.pow(2, halve)), 4);
 			}
 
 			/* :: SEARCH | EXPAND */
-			Node current = search(root);
+			Node current;
+			if (USE_HALVE || USE_UCB_SQRT)
+				current = search(searchRootChild(root));
+			else
+				current = search(root);
 
 			/* :: SIMULATION */
 			Othello playoutGame = current.game.copy();
@@ -111,24 +98,17 @@ public class SHMCTS extends AI {
 			playout(playoutGame, maxDepth);
 			int finalTurn = playoutGame.numTurn;
 
-			if (playoutGame.isTerminal()) {
-				sumDepths += (finalTurn - preTurn);
-				validDepths++;
-			}
-
 			/* :: BACKPROPAGATION */
 			backpropagation(playoutGame, current, finalTurn - preTurn);
 
 			++numIterations;
-			pass_time = System.currentTimeMillis() - start_time;
 
-
-			
-			if(numIterations%100==0){
-				for(Node child: root.children){
-					if(child.stats==null)child.stats=new Statistics();
-					child.stats.computeMean(child);
-				}
+			if (numIterations % 100 == 0) {
+				// for(Node child: root.children){
+				// if(child.stats==null)child.stats=new Statistics();
+				// child.stats.computeMean(child);
+				// child.stats.computeAllocation(root, child);
+				// }
 				stats.computeStandardDeviation(root);
 				stats.computeMean(root);
 				stats.computeMedian(root);
@@ -136,29 +116,45 @@ public class SHMCTS extends AI {
 				stats.computeVarCoef(root);
 			}
 		}
-		//System.out.println(var);
-		final long end_time = System.currentTimeMillis();
 
 		// :: FINAL SELECTION
 		Node decidedNode = finalMoveSelection(root);
-		//stats.computeEntropy(decidedNode);
+		// stats.computeEntropy(decidedNode);
 		smartThinkLimit -= System.currentTimeMillis() - start_time;
-		
-        stats.endCronometer();
+
+		stats.endCronometer();
 		root.sort(root.virtualN);
 		
-		if(root.children.size()>4){
-			armsStats  = root.children.get(0).moveFromParent + root.children.get(0).stats.toStringMean()+"\n";
-			armsStats += root.children.get(1).moveFromParent + root.children.get(1).stats.toStringMean()+"\n";
-			armsStats += root.children.get(2).moveFromParent + root.children.get(2).stats.toStringMean()+"\n";
-			armsStats += root.children.get(3).moveFromParent + root.children.get(3).stats.toStringMean()+"\n";
-		}
+		stats.computeAllocation(root);
+		
+
+		// if (root.children.size() > 4) {
+		// 	armsStats = root.children.get(0).moveFromParent + root.children.get(0).stats.toStringMean() + "\n";
+		// 	armsStats += root.children.get(1).moveFromParent + root.children.get(1).stats.toStringMean() + "\n";
+		// 	armsStats += root.children.get(2).moveFromParent + root.children.get(2).stats.toStringMean() + "\n";
+		// 	armsStats += root.children.get(3).moveFromParent + root.children.get(3).stats.toStringMean() + "\n";
+		// }
+		
 		printEvaluation(root);
 		return decidedNode.moveFromParent;
 	}
 
-	public Node search(final Node root) {
+	public Node searchRootChild(final Node root) {
 		Node current = root;
+
+		if (!current.unexpandedMoves.isEmpty()) {
+			final Move move = current.unexpandedMoves.remove(
+					ThreadLocalRandom.current().nextInt(current.unexpandedMoves.size()));
+			final Othello game = current.game.copy();
+			game.apply(move);
+			return new Node(current, move, game);
+		}
+
+		return rootPolicy.select(current);
+	}
+
+	public Node search(final Node node) {
+		Node current = node;
 		while (true) {
 
 			if (current.game.isTerminal())
@@ -172,11 +168,11 @@ public class SHMCTS extends AI {
 				return new Node(current, move, game);
 			}
 
-			current = policy.select(current);
+			current = searchPolicy.select(current);
 
 		}
 		return current;
-	} 
+	}
 
 	public void backpropagation(final Othello playoutGame, Node current, final int numTurns) {
 
@@ -195,12 +191,12 @@ public class SHMCTS extends AI {
 				current.Q[p] += discUt;
 			}
 
-			if(utilities[current.game.mover-1] == 1){
+			if (utilities[current.game.mover - 1] == 1) {
 				current.wins += 1;
-			}else if(utilities[current.game.mover-1] == -1){
-				current.loss +=1;
-			}else{
-				current.drawn+=1;
+			} else if (utilities[current.game.mover - 1] == -1) {
+				current.loss += 1;
+			} else {
+				current.drawn += 1;
 			}
 			learning *= DISCOUNT_FACTOR;
 			current = current.parent;
@@ -208,11 +204,11 @@ public class SHMCTS extends AI {
 	}
 
 	private void printEvaluation(Node n) {
-		System.out.println(String.format("ROOT  %d nodes", n.N));
+		System.out.println(String.format("%s  %d nodes", this.friendlyName, n.N));
 		for (Node ch : n.children) {
 			System.out.println(String.format("\t%s | (%.0f/%d) %.4f", ch.moveFromParent,
-			ch.Q[this.player-1],
-			ch.N,ch.Q[this.player-1]/ch.N));
+					ch.Q[this.player - 1],
+					ch.N, ch.Q[this.player - 1] / ch.N));
 		}
 	}
 
