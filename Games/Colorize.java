@@ -1,3 +1,4 @@
+package Games;
 public class Colorize {
     enum Color {
         // Color end string, color reset

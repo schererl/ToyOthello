@@ -1,14 +1,18 @@
+package Agents;
 import java.util.ArrayList;
 import java.util.concurrent.ThreadLocalRandom;
 
+import Games.Move;
+import Games.Othello;
+import Games.Game;
 public abstract class AI{
 	protected String friendlyName;
-	protected int player;
+	public int player;
 	protected Statistics stats;
 	protected int countNodes;
 	public Move selectAction
 	(
-		final Othello game,
+		final Game game,
 		final double maxSeconds, 
 		final int maxIterations, 
 		final int maxDepth
@@ -24,12 +28,16 @@ public abstract class AI{
 
 	public void setID(final int playerID){ this.player = playerID; }
 
-	public void playout(Othello playoutGame, final int maxDepth) {
+	public void playout(Game playoutGame, final int maxDepth) {
 		while (!playoutGame.isTerminal() && playoutGame.numTurn < maxDepth) {
 			ArrayList<Move> moves = playoutGame.moves();
 			playoutGame.apply(moves.get(ThreadLocalRandom.current().nextInt(moves.size())));
 		}
 		countNodes++;
+	}
+
+	public String getFrindlyName(){
+		return friendlyName;
 	}
 
 	@Override

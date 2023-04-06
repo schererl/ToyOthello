@@ -1,12 +1,17 @@
+package Agents;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
+import Games.Move;
+import Games.Game;
+import Games.Othello;
+
 public class Node {
     public Statistics stats;
 
-    public final Othello game;
+    public final Game game;
     public final Move moveFromParent;
     
     public Node parent;
@@ -20,13 +25,13 @@ public class Node {
     public List<Node> children;
     public ArrayList<Move> unexpandedMoves;
     
-    public Node(final Node parent, Move moveFromParent, final Othello game) {
+    public Node(final Node parent, Move moveFromParent, final Game game) {
         children = new ArrayList<Node>();
         
         this.parent = parent;
         this.moveFromParent = moveFromParent;
         this.game = game;
-        Q = new double[game.PLAYERS_COUNT];
+        Q = new double[game.playersCount];
         N= 0;
         wins = 0;
         loss = 0;

@@ -1,5 +1,0 @@
-SIZE:8
-        std dev: 0,017688
-        average: 0,938962
-        median: -0,654987
-entropy: 0,138154

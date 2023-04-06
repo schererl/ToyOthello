@@ -1,5 +1,11 @@
+package Agents;
+
 import java.util.ArrayList;
 import java.util.concurrent.ThreadLocalRandom;
+
+import Games.Move;
+import Games.Othello;
+import Games.Game;
 
 public class SHOT extends AI {
     final boolean debug = false;
@@ -18,14 +24,14 @@ public class SHOT extends AI {
     }
 
     @Override
-    public Move selectAction(final Othello game,
+    public Move selectAction(final Game game,
             final double maxSeconds,
             final int maxIterations,
             final int maxDepth) {
         stats.clear();
         stats.startCronometer();
         super.countNodes = 0;
-        
+
         SHOTNode root = new SHOTNode(null, null, game);
         int budget;
         root.openLayer();
@@ -48,13 +54,12 @@ public class SHOT extends AI {
         root.openLayer();
         search(root, budget);
         root.closeLayer();
-        
-        if(root.children.size()>1){
-            int unspendBudget = budget-root.N;
+
+        if (root.children.size() > 1) {
+            int unspendBudget = budget - root.N;
             search(root.children.get(1), unspendBudget);
             root.sort(2);
         }
-        
 
         stats.endCronometer();
         return root.children.get(0).moveFromParent;
@@ -73,7 +78,7 @@ public class SHOT extends AI {
         }
 
         if (budget == 1) {
-            Othello gameCpy = node.game.copy();
+            Game gameCpy = node.game.copy();
             super.playout(gameCpy, 1000);
             node.updateLayerValues(gameCpy.utilities());
             return;
@@ -105,7 +110,8 @@ public class SHOT extends AI {
         while (virtualChildrenLenght > 1) {
             childBudget = Math.max(1, (int) Math.floor(layerBudget / virtualChildrenLenght));
 
-            int itChildren = (layerBudget < virtualChildrenLenght?(int)Math.floor(layerBudget):virtualChildrenLenght);
+            int itChildren = (layerBudget < virtualChildrenLenght ? (int) Math.floor(layerBudget)
+                    : virtualChildrenLenght);
             for (int i = 0; i < itChildren; i++) {
 
                 SHOTNode child = node.children.get(i);
@@ -129,14 +135,14 @@ public class SHOT extends AI {
             Move childAction = node.unexpandedMoves
                     .remove(ThreadLocalRandom.current().nextInt(node.unexpandedMoves.size()));
 
-            Othello childGame = node.game.copy();
+            Game childGame = node.game.copy();
             childGame.apply(childAction);
             SHOTNode childNode = new SHOTNode(null, childAction, childGame);
             node.children.add(childNode);
 
             childNode.openLayer();
 
-            Othello gameCpy = childNode.game.copy();
+            Game gameCpy = childNode.game.copy();
             super.playout(gameCpy, 1000);
             childNode.updateLayerValues(gameCpy.utilities());
 

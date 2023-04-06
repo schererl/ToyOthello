@@ -1,41 +1,44 @@
+package Games;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
 /* TODO: APPLY (virar tudo) */
-public class Othello {
-
-    final static int EMPTY = 0;
-    final static int BLACK_UP = 1;
-    final static int WHITE_UP = 2;
-    final static int PLAYERS_COUNT = 2;
+public class Othello extends Game {
+    public final static int PLAYERS_COUNT = 2;
 
     public final int size;
     public int[][] grid;
-    public int numTurn;
-    public int mover;
 
     private int pass = 0;
-    private boolean utComputed;
     private double[] ut;
 
     public Othello(final int sz, final int startPlayer) {
+        super(startPlayer, 2);
         size = sz;
         mover = startPlayer;
         grid = new int[size][size];
         numTurn = 0;
-        utComputed = false;
+        this.ut = new double[PLAYERS_COUNT];
+        initPos();
+    }
+
+    public Othello(final int sz, final int mover, int turns) {
+        super(turns, mover, 2);
+        size = sz;
+        grid = new int[size][size];
         this.ut = new double[PLAYERS_COUNT];
         initPos();
     }
 
     public Othello(final int sz, final int startPlayer, int[][] grid) {
+        super(startPlayer, 2);
         size = sz;
         mover = startPlayer;
         this.grid = new int[size][size];
         this.ut = new double[PLAYERS_COUNT];
         numTurn = 0;
-        utComputed = false;
 
         if (sz > grid.length) {
             int offset = sz - grid.length;
@@ -54,8 +57,14 @@ public class Othello {
         }
     }
 
-    public Othello copy() {
-        Othello instance = new Othello(this.size, mover);
+    @Override
+    public int playerIndex() {
+        return mover - 1;
+    }
+
+    @Override
+    public Game copy() {
+        Othello instance = new Othello(this.size, mover, this.numTurn);
         instance.pass = this.pass;
         instance.numTurn = this.numTurn;
         for (int i = 0; i < size; i++) {
@@ -66,19 +75,6 @@ public class Othello {
         return instance;
     }
 
-    /*
-     * SIZE:8
-     * std dev: 0,053118
-     * average: 0,830069
-     * median: -0,545913
-     * 
-     * it:5677
-     * curr state:
-     * {{0,0,0,1,2,2,2,0},{2,0,1,1,1,2,2,1},{0,1,0,1,1,1,2,1},{1,1,1,1,1,1,2,1},{0,0
-     * ,1,2,2,2,1,1},{0,0,1,2,2,1,1,1},{0,1,2,0,1,1,1,2},{0,2,2,0,0,0,2,0}}
-     * bfactor: 15
-     * 
-     */
     public void initPos() {
         final int W1i = size / 2 + 1;
         final int W1j = size / 2;
@@ -95,32 +91,33 @@ public class Othello {
         grid[B2i - 1][B2j - 1] = WHITE_UP;
     }
 
-    /*
-     * for each empty space verify if there is a valid pattern in any direction, if
-     * has any it is a valid move
-     */
+    @Override
     public ArrayList<Move> moves() {
         ArrayList<Move> movs = new ArrayList<Move>();
         for (int i = 0; i < size; i++) {
             for (int j = 0; j < size; j++) {
                 if (grid[i][j] == 0 && validMove(i, j)) {
-                    movs.add(new Move(i, j));
+                    Move m = new Move();
+                    m.setPosInsertion(i, j);
+                    movs.add(m);
                 }
             }
         }
         // if no move can be done, pass.
         if (movs.size() == 0) {
-            movs.add(new Move(-1, -1));
+            Move m = new Move();
+            m.setPosInsertion(-1, -1);
+            movs.add(m);
         } // PASS
 
         return movs;
     }
 
-    /* check which directions the oponents pieces must be flipped */
-    public void apply(final Move Move) {
+    @Override
+    public void apply(final Move m) {
         this.numTurn++;
 
-        int[] move = Move.pos;
+        int[] move = m.posInsertion;
         if (move[0] == -1 && move[1] == -1) {
             pass++;
             mover = mover == 1 ? 2 : 1;
@@ -172,7 +169,7 @@ public class Othello {
         pass = 0;
     }
 
-    /* check fr termination */
+    @Override
     public Boolean isTerminal() {
         int countBlack = 0;
         int countWhite = 0;
@@ -200,11 +197,11 @@ public class Othello {
                 ut[Othello.BLACK_UP - 1] = 0;
                 ut[Othello.WHITE_UP - 1] = 0;
             }
-            utComputed = true;
         }
         return terminal;
     }
 
+    @Override
     public double[] utilities() {
         return this.ut;
     }
@@ -296,58 +293,6 @@ public class Othello {
         return false;
     }
 
-    public String movesToString(ArrayList<Move> moves) {
-        Colorize c = new Colorize();
-        String output = "";
-
-        if (mover == BLACK_UP) {
-            c.printBlackPiece();
-            output += ":[ ";
-        } else {
-            c.printWhitekPiece();
-            output += ":[ ";
-        }
-        for (Move m : moves) {
-            output += String.format("(%d, %d) ", m.pos[0], m.pos[1]);
-        }
-        output += "]";
-        return output;
-    }
-
-    public void paintLegalMoves(ArrayList<Move> moves) {
-        Colorize c = new Colorize();
-        for (int i = 0; i < size; i++) {
-            for (int j = 0; j < size; j++) {
-                boolean GAMBI = false;
-                for (Move m : moves) {
-                    if (m.pos[0] == i && m.pos[1] == j) {
-                        if (mover == BLACK_UP) {
-                            c.paintItBlack();
-                            GAMBI = true;
-                            System.out.print(" ");
-                        } else if (mover == WHITE_UP) {
-                            c.paintItWhite();
-                            GAMBI = true;
-                            System.out.print(" ");
-                        }
-                    }
-                }
-                if (GAMBI) {
-                    continue;
-                }
-                if (grid[i][j] == BLACK_UP) {
-                    c.printBlackPiece();
-                } else if (grid[i][j] == WHITE_UP) {
-                    c.printWhitekPiece();
-                } else {
-                    c.printEmpty();
-                }
-                System.out.print(" ");
-            }
-            System.out.println();
-        }
-    }
-
     public void printfBoard() {
         Colorize c = new Colorize();
         for (int i = 0; i < size; i++) {
@@ -363,22 +308,6 @@ public class Othello {
             }
             System.out.println();
         }
-    }
-
-    public String toStringFormat() {
-        String output = "{";
-        for (int i = 0; i < size; i++) {
-            output += "{";
-            for (int j = 0; j < size; j++) {
-                output += String.format("%d,", grid[i][j]);
-            }
-            output = output.substring(0, output.length() - 1);
-            output += "},";
-        }
-        output = output.substring(0, output.length() - 1);
-
-        output += "}";
-        return output;
     }
 
     @Override

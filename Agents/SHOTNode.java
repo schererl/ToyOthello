@@ -1,7 +1,12 @@
+package Agents;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+
+import Games.Game;
+import Games.Move;
+import Games.Othello;
 
 public class SHOTNode extends Node {
     public double[] Lq; 
@@ -9,9 +14,9 @@ public class SHOTNode extends Node {
     public final List<SHOTNode> children = new ArrayList<SHOTNode>();
     
 
-    public SHOTNode(final Node parent, Move moveFromParent, final Othello game) {
+    public SHOTNode(final Node parent, Move moveFromParent, final Game game) {
         super(parent, moveFromParent, game);
-        Lq = new double[game.PLAYERS_COUNT];
+        Lq = new double[game.playersCount];
         Ln = 0;
     }
 
